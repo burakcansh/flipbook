@@ -69,8 +69,24 @@ export default function Flipbook({
   const [drag, setDrag] = useState<Drag | null>(null);
   const [soundOn, setSoundOn] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  // On mobile we show a single page at a time. `half` = which page of the open
+  // spread is centered: 0 = left page, 1 = right page.
+  const [half, setHalf] = useState(0);
   const sceneRef = useRef<HTMLDivElement | null>(null);
   const soundRef = useRef(true);
+
+  const currentRef = useRef(0);
+  const halfRef = useRef(0);
+  const mobileRef = useRef(false);
+  useEffect(() => {
+    currentRef.current = current;
+  }, [current]);
+  useEffect(() => {
+    halfRef.current = half;
+  }, [half]);
+  useEffect(() => {
+    mobileRef.current = isMobile;
+  }, [isMobile]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640);
@@ -102,23 +118,54 @@ export default function Flipbook({
     if (current > total) setCurrent(total);
   }, [total, current]);
 
-  const next = useCallback(() => {
-    setCurrent((c) => {
-      if (c >= total) return c;
-      setFlipping(c);
-      if (soundRef.current) playFlipSound();
-      return c + 1;
-    });
+  const flipForward = useCallback(() => {
+    const c = currentRef.current;
+    if (c >= total) return;
+    setFlipping(c);
+    if (soundRef.current) playFlipSound();
+    setHalf(0);
+    setCurrent(c + 1);
   }, [total]);
 
-  const prev = useCallback(() => {
-    setCurrent((c) => {
-      if (c <= 0) return c;
-      setFlipping(c - 1);
-      if (soundRef.current) playFlipSound();
-      return c - 1;
-    });
+  const flipBack = useCallback(() => {
+    const c = currentRef.current;
+    if (c <= 0) return;
+    setFlipping(c - 1);
+    if (soundRef.current) playFlipSound();
+    // Landing on an open spread → focus its right page; on the cover → half 0.
+    setHalf(c - 1 >= 1 ? 1 : 0);
+    setCurrent(c - 1);
   }, []);
+
+  const next = useCallback(() => {
+    if (mobileRef.current) {
+      const c = currentRef.current;
+      // Open spread showing the left page → slide to the right page first.
+      if (c >= 1 && c < total && halfRef.current === 0) {
+        setHalf(1);
+        if (soundRef.current) playFlipSound();
+        return;
+      }
+      flipForward();
+      return;
+    }
+    flipForward();
+  }, [flipForward, total]);
+
+  const prev = useCallback(() => {
+    if (mobileRef.current) {
+      const c = currentRef.current;
+      // Open spread showing the right page → slide back to the left page.
+      if (c >= 1 && c <= total - 1 && halfRef.current === 1) {
+        setHalf(0);
+        if (soundRef.current) playFlipSound();
+        return;
+      }
+      flipBack();
+      return;
+    }
+    flipBack();
+  }, [flipBack, total]);
 
   // Keyboard navigation.
   useEffect(() => {
@@ -153,6 +200,13 @@ export default function Flipbook({
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Mobile: no real-time leaf follow (single-page mode) — just track movement.
+    if (mobileRef.current) {
+      setDrag((d) =>
+        d ? { ...d, moved: d.moved || Math.abs(e.clientX - d.startX) > 5 } : d
+      );
+      return;
+    }
     setDrag((d) => {
       if (!d) return d;
       const dx = e.clientX - d.startX;
@@ -188,6 +242,17 @@ export default function Flipbook({
         e.currentTarget.releasePointerCapture(e.pointerId);
       } catch {
         /* ignore */
+      }
+      if (mobileRef.current) {
+        const dx = e.clientX - d.startX;
+        if (Math.abs(dx) > 40) {
+          if (dx < 0) next();
+          else prev();
+        } else if (!d.moved) {
+          if (clickX < rect.width / 2) prev();
+          else next();
+        }
+        return null;
       }
       if (d.dir === null) {
         // no swipe → treat as a click on the left/right half
@@ -261,19 +326,34 @@ export default function Flipbook({
     } as React.CSSProperties;
   };
 
-  // Slide the book so the closed cover / closing back-cover sits centered.
-  const offset = current === 0 ? "-25%" : current >= total ? "25%" : "0%";
+  // Slide the book. Desktop shows the spread centered; mobile focuses a single
+  // page (filling the screen) with the neighbouring page peeking at the edge.
+  let offset: string;
+  if (isMobile) {
+    if (current === 0)
+      offset = "-45%"; // cover (right half) centered
+    else if (current >= total)
+      offset = "2%"; // back cover / last left page
+    else offset = half === 0 ? "2%" : "-44%"; // left page vs right page focus
+  } else {
+    offset = current === 0 ? "-25%" : current >= total ? "25%" : "0%";
+  }
 
   return (
-    <div className="flex w-full flex-col items-center gap-4">
+    <div
+      className={`flex w-full flex-col items-center gap-4 ${
+        isMobile ? "overflow-x-hidden" : ""
+      }`}
+    >
       <div
         ref={sceneRef}
         className="flip-scene relative mx-auto no-select"
         style={
           {
-            // as large as fits: limited by viewport height, then by width
+            // Mobile: one page ≈ full screen width (book spread ≈ 2× screen),
+            // so a single page fills and the neighbour peeks. Desktop: fit spread.
             width: isMobile
-              ? "min(98vw, calc((100vh - 150px) * 1.5))"
+              ? "min(172vw, calc((100vh - 120px) * 1.5))"
               : "min(96vw, calc((100vh - 240px) * 1.5))",
             aspectRatio: "3 / 2",
             touchAction: "pan-y",
