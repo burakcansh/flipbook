@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(npm run *)",
+      "Bash(npx tsc *)",
+      "WebFetch(domain:heyzine.com)",
+      "Bash(cp \"/Users/buraksarikaya/Downloads/Hotel Music Is Calm.mp3\" public/audio/hotel-calm-1.mp3)",
+      "Bash(cp \"/Users/buraksarikaya/Downloads/Hotel Music Is Calm-2.mp3\" public/audio/hotel-calm-2.mp3)",
+      "Bash(cp \"/Users/buraksarikaya/Downloads/Hotel Music Is Calm-3.mp3\" public/audio/hotel-calm-3.mp3)",
+      "Bash(cp \"/Users/buraksarikaya/Downloads/Serenity Flow.mp3\" public/audio/serenity-flow.mp3)"
+    ]
+  }
+}

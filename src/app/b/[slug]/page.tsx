@@ -1,0 +1,78 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { getBookBySlug } from "@/lib/db";
+import { getTheme } from "@/lib/themes";
+import ViewerScreen from "@/components/ViewerScreen";
+import ViewerGate from "@/components/ViewerGate";
+import type { PublicBook } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const book = await getBookBySlug(params.slug);
+  if (!book) {
+    return { title: "Kitap bulunamadı — Flipbook" };
+  }
+  const title = book.cover.title || "Adsız kitap";
+
+  // Locked books must not leak content into OG/metadata.
+  if (book.viewPassword) {
+    return {
+      title: `${title} — Flipbook`,
+      description: "Bu kitap şifre ile korunuyor.",
+    };
+  }
+
+  const description =
+    book.cover.subtitle ||
+    `${getTheme(book.themeKey).name} temasında bir Flipbook kitabı.`;
+  const firstVideo = book.pages.find(
+    (p) => p.kind === "video" && p.video?.thumbnail
+  );
+  const ogImage = firstVideo?.video?.thumbnail;
+
+  return {
+    title: `${title} — Flipbook`,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
+    },
+    twitter: {
+      card: ogImage ? "summary_large_image" : "summary",
+      title,
+      description,
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+  };
+}
+
+export default async function PublicBookPage({
+  params,
+}: {
+  params: { slug: string };
+}) {
+  const book = await getBookBySlug(params.slug);
+  if (!book) notFound();
+
+  // Password-protected → render an unlock gate (no content in the HTML).
+  if (book.viewPassword) {
+    return (
+      <ViewerGate
+        slug={params.slug}
+        title={book.cover.title || "Adsız kitap"}
+        themeKey={book.themeKey}
+      />
+    );
+  }
+
+  const { ownerId, viewPassword, ...rest } = book;
+  const publicBook: PublicBook = rest;
+  return <ViewerScreen book={publicBook} />;
+}
