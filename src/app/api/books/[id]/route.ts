@@ -53,6 +53,7 @@ export async function PUT(
     book.cover = {
       title: String(patch.cover.title ?? ""),
       subtitle: String(patch.cover.subtitle ?? ""),
+      name: patch.cover.name ? String(patch.cover.name) : "",
       image: patch.cover.image ? String(patch.cover.image) : null,
       video: patch.cover.video ?? null,
     };

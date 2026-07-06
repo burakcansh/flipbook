@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
   const summaries: BookSummary[] = books.map((b) => ({
     id: b.id,
     title: b.cover.title || "Adsız kitap",
+    name: b.cover.name || "",
     themeKey: b.themeKey,
     status: b.status,
     slug: b.slug,

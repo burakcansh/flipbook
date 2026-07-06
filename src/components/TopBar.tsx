@@ -113,7 +113,7 @@ export default function TopBar({ activeBookId }: { activeBookId?: string }) {
                         }`}
                       >
                         <span className="truncate text-gray-800">
-                          {b.title || "Adsız kitap"}
+                          {b.name || b.title || "Adsız kitap"}
                         </span>
                         <span
                           className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${

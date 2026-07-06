@@ -8,3 +8,5 @@ data/uploads/
 .env*.local
 
 tsconfig.tsbuildinfo
+.vercel
+.env*

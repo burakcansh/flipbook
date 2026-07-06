@@ -363,7 +363,7 @@ export default function Editor({ id }: { id: string }) {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-amber-950">
-              {book.cover.title || "Adsız kitap"}
+              {book.cover.name || book.cover.title || "Adsız kitap"}
             </span>
             <span
               className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
@@ -510,9 +510,24 @@ export default function Editor({ id }: { id: string }) {
                 <h2 className="text-lg font-semibold text-amber-950">
                   Kapak
                 </h2>
+                <div className="rounded-lg border border-amber-900/10 bg-amber-50/50 p-3">
+                  <label className="mb-1 block text-xs font-medium text-amber-900/70">
+                    Kitap adı (yalnızca “Kitaplarım”da görünür)
+                  </label>
+                  <input
+                    value={book.cover.name ?? ""}
+                    onChange={(e) => patchCover({ name: e.target.value })}
+                    onBlur={commitSave}
+                    placeholder="örn. Nextviro Tanıtım — Ağustos"
+                    className="w-full rounded-lg border border-amber-900/20 bg-white px-3 py-2 outline-none focus:border-amber-600"
+                  />
+                  <p className="mt-1 text-[11px] text-amber-900/50">
+                    Kapakta görünmez; kitaplarını kolay ayırt etmen için.
+                  </p>
+                </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-amber-900/70">
-                    Başlık
+                    Başlık (kapakta görünür)
                   </label>
                   <input
                     value={book.cover.title}

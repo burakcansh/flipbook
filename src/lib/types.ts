@@ -105,6 +105,8 @@ export interface LinkItem {
 export interface BookCover {
   title: string;
   subtitle: string;
+  /** admin-only label shown in "Kitaplarım" (not printed on the cover) */
+  name?: string;
   /** optional full-bleed cover background image */
   image?: string | null;
   /** optional full-bleed cover background video (autoplays muted, loops) */
@@ -142,6 +144,8 @@ export type PublicBook = Omit<Book, "ownerId" | "viewPassword">;
 export interface BookSummary {
   id: string;
   title: string;
+  /** admin label (falls back to title when empty) */
+  name: string;
   themeKey: ThemeKey;
   status: BookStatus;
   slug: string | null;

@@ -85,7 +85,7 @@ export default function DashboardPage() {
                       className="line-clamp-3 text-sm font-semibold"
                       style={{ fontFamily: theme.fonts.display }}
                     >
-                      {b.title || "Adsız kitap"}
+                      {b.name || b.title || "Adsız kitap"}
                     </span>
                   </Link>
                   <div className="flex flex-1 flex-col gap-2 p-3">
