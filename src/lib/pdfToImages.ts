@@ -8,11 +8,10 @@ export async function pdfToJpegBlobs(
   scale = 2
 ): Promise<Blob[]> {
   const pdfjs = await import("pdfjs-dist");
-  // The worker ships with the package; point pdf.js at it (bundled by webpack).
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url
-  ).toString();
+  // The worker is served as a static file from /public (kept in sync with the
+  // installed pdfjs-dist version). Serving it directly avoids webpack/Terser
+  // trying to minify the ESM worker, which breaks the build.
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
   const data = await file.arrayBuffer();
   const doc = await pdfjs.getDocument({ data }).promise;
