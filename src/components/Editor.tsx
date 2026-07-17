@@ -301,7 +301,20 @@ export default function Editor({ id }: { id: string }) {
     const cur = bookRef.current;
     if (!cur || urls.length === 0) return;
     const pages = cur.pages.slice();
-    pages[index] = { ...pages[index], bgImage: urls[0], bgColor: null };
+    // Multi-page PDF import → make the current page a clean full-page PDF
+    // background too (drop any template placeholder text/media), so every
+    // imported page looks the same.
+    pages[index] = {
+      ...pages[index],
+      bgImage: urls[0],
+      bgColor: null,
+      texts: [],
+      heading: undefined,
+      body: undefined,
+      image: null,
+      video: null,
+      caption: undefined,
+    };
     const extra: BookPage[] = urls.slice(1).map((u) => ({
       id: genId("p_"),
       kind: "text",
