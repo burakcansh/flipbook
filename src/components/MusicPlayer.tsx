@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/LangProvider";
 import type { MusicTrack } from "@/lib/types";
 
 export default function MusicPlayer({ tracks }: { tracks: MusicTrack[] }) {
+  const t = useT();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -30,7 +32,7 @@ export default function MusicPlayer({ tracks }: { tracks: MusicTrack[] }) {
   }
 
   return (
-    <div className="fixed right-4 top-16 z-50">
+    <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 sm:bottom-auto sm:left-auto sm:right-4 sm:top-16 sm:translate-x-0">
       <audio
         ref={audioRef}
         src={track.url}
@@ -45,14 +47,14 @@ export default function MusicPlayer({ tracks }: { tracks: MusicTrack[] }) {
         <button
           onClick={prev}
           disabled={tracks.length < 2}
-          title="Önceki parça"
+          title={t.ed.prevTrack}
           className="text-lg leading-none opacity-90 hover:opacity-100 disabled:opacity-30"
         >
           ⏮
         </button>
         <button
           onClick={toggle}
-          title={playing ? "Durdur" : "Çal"}
+          title={playing ? t.ed.pause : t.ed.play}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-black transition hover:scale-105"
         >
           {playing ? "⏸" : "▶"}
@@ -60,7 +62,7 @@ export default function MusicPlayer({ tracks }: { tracks: MusicTrack[] }) {
         <button
           onClick={next}
           disabled={tracks.length < 2}
-          title="Sonraki parça"
+          title={t.ed.nextTrack}
           className="text-lg leading-none opacity-90 hover:opacity-100 disabled:opacity-30"
         >
           ⏭

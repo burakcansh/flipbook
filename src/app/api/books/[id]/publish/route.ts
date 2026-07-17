@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBook, saveBook, slugExists } from "@/lib/db";
+import { ensureShareCode, getBook, saveBook, slugExists } from "@/lib/db";
 import { getOwnerIdFromRequest } from "@/lib/serverAuth";
 import { genSlug } from "@/lib/ids";
 
@@ -36,6 +36,7 @@ export async function POST(
       book.slug = slug;
     }
     book.status = "published";
+    await ensureShareCode(book);
   } else {
     book.status = "draft";
     // Keep the slug so re-publishing yields the same link.

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { uploadAudio } from "@/lib/api";
 import { genId } from "@/lib/ids";
 import { MUSIC_LIBRARY } from "@/lib/musicLibrary";
+import { useT } from "@/lib/LangProvider";
 import type { MusicTrack } from "@/lib/types";
 
 export default function MusicEditor({
@@ -15,6 +16,7 @@ export default function MusicEditor({
   onChange: (music: MusicTrack[]) => void;
   onCommit: () => void;
 }) {
+  const t = useT();
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -56,12 +58,8 @@ export default function MusicEditor({
 
   return (
     <div className="border-t border-amber-900/10 pt-4">
-      <h3 className="text-sm font-semibold text-amber-950">
-        🎵 Arka plan müziği
-      </h3>
-      <p className="mb-3 text-xs text-amber-900/55">
-        Kitabı okuyanlar bu çalma listesini dinleyebilir (çal/durdur, ileri/geri).
-      </p>
+      <h3 className="text-sm font-semibold text-amber-950">{t.ed.musicTitle}</h3>
+      <p className="mb-3 text-xs text-amber-900/55">{t.ed.musicHint}</p>
 
       {/* current playlist */}
       {music.length > 0 && (
@@ -95,7 +93,7 @@ export default function MusicEditor({
                 onClick={() => remove(m.id)}
                 className="text-xs text-red-400 hover:text-red-600"
               >
-                Sil
+                {t.ed.delete}
               </button>
             </li>
           ))}
@@ -104,19 +102,19 @@ export default function MusicEditor({
 
       {/* library */}
       <div className="mb-2 text-xs font-medium text-amber-900/70">
-        Hazır parçalar
+        {t.ed.musicLibrary}
       </div>
       <div className="mb-3 flex flex-col gap-1.5">
-        {MUSIC_LIBRARY.map((t) => (
+        {MUSIC_LIBRARY.map((track) => (
           <button
-            key={t.id}
-            onClick={() => addLib(t)}
-            disabled={has(t.url)}
+            key={track.id}
+            onClick={() => addLib(track)}
+            disabled={has(track.url)}
             className="flex items-center justify-between rounded-lg border border-amber-900/15 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-amber-50 disabled:opacity-50"
           >
-            <span className="truncate">{t.title}</span>
+            <span className="truncate">{track.title}</span>
             <span className="shrink-0 text-xs font-medium text-amber-700">
-              {has(t.url) ? "✓ eklendi" : "+ Ekle"}
+              {has(track.url) ? t.ed.added : t.ed.addShort}
             </span>
           </button>
         ))}
@@ -134,7 +132,7 @@ export default function MusicEditor({
         onClick={() => inputRef.current?.click()}
         className="w-full rounded-lg border border-dashed border-amber-700/50 px-3 py-2 text-xs font-medium text-amber-800 hover:bg-amber-50"
       >
-        {uploading ? "Yükleniyor…" : "🎧 Kendi müziğini yükle (MP3…)"}
+        {uploading ? t.ed.uploading : t.ed.musicUpload}
       </button>
     </div>
   );

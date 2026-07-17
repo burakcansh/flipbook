@@ -19,7 +19,7 @@ const DESIGN_H = 400;
 
 export type FaceContent =
   | { type: "cover"; cover: BookCover }
-  | { type: "page"; page: BookPage; pageNumber: number }
+  | { type: "page"; page: BookPage; pageNumber: number; isEnd?: boolean }
   | { type: "back-cover" }
   | { type: "blank" };
 
@@ -1058,22 +1058,28 @@ export default function BookFace({
                 {ornament}
               </div>
             )}
-            <h1
-              className="font-bold uppercase leading-[0.95]"
-              style={{
-                fontFamily: theme.fonts.display,
-                fontSize: "clamp(1.9rem, 6vw, 3rem)",
-                letterSpacing: hasMedia ? "0.04em" : "0.02em",
-                textShadow: hasMedia ? "0 2px 18px rgba(0,0,0,0.5)" : "none",
-                color: hasMedia ? "#fff" : c.coverText,
-              }}
-            >
-              {content.cover.title || "Başlıksız"}
-            </h1>
-            <div
-              className="mx-auto mt-3 h-px w-14"
-              style={{ background: c.coverAccent, opacity: 0.9 }}
-            />
+            {content.cover.title ? (
+              <>
+                <h1
+                  className="font-bold uppercase leading-[0.95]"
+                  style={{
+                    fontFamily: theme.fonts.display,
+                    fontSize: "clamp(1.9rem, 6vw, 3rem)",
+                    letterSpacing: hasMedia ? "0.04em" : "0.02em",
+                    textShadow: hasMedia
+                      ? "0 2px 18px rgba(0,0,0,0.5)"
+                      : "none",
+                    color: hasMedia ? "#fff" : c.coverText,
+                  }}
+                >
+                  {content.cover.title}
+                </h1>
+                <div
+                  className="mx-auto mt-3 h-px w-14"
+                  style={{ background: c.coverAccent, opacity: 0.9 }}
+                />
+              </>
+            ) : null}
           </div>
 
           {content.cover.subtitle ? (
@@ -1143,10 +1149,9 @@ export default function BookFace({
   // ---- Content page ----
   const { page, pageNumber } = content;
   const hasCustomBg = !!(page.bgColor || page.bgImage);
+  // In a spread, each face shows one half of the background; `side` decides
+  // which half (handled on the <img> below).
   const spread = !!page.bgSpread;
-  // In a spread, this page shows one half of the background; `side` tells us
-  // which half (left face = left half, right face = right half).
-  const bgPos = side === "left" ? "0% center" : "100% center";
   const isGradient = !!page.bgColor && page.bgColor.includes("gradient");
   return (
     <div
@@ -1156,23 +1161,44 @@ export default function BookFace({
       } no-select`}
       style={
         {
-          backgroundImage: page.bgImage
-            ? `url("${page.bgImage}")`
-            : isGradient
-            ? (page.bgColor as string)
-            : "none",
+          // Full-page background images are rendered as an <img> below (not a
+          // CSS background) so PDF/canvas snapshots reproduce them at full
+          // brightness. Only gradients/solid colours stay as CSS backgrounds.
+          backgroundImage:
+            !page.bgImage && isGradient ? (page.bgColor as string) : "none",
           backgroundColor: page.bgImage
-            ? undefined
+            ? "#ffffff"
             : isGradient
             ? undefined
             : page.bgColor || c.paper,
-          backgroundSize: spread ? "200% 100%" : "cover",
-          backgroundPosition: spread ? bgPos : "center",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           "--spine": c.spine,
         } as React.CSSProperties
       }
     >
+      {page.bgImage && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={page.bgImage}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="pointer-events-none absolute inset-0 h-full w-full select-none"
+          style={
+            spread
+              ? {
+                  width: "200%",
+                  height: "100%",
+                  maxWidth: "none",
+                  objectFit: "fill",
+                  left: side === "left" ? "0" : "-100%",
+                }
+              : { objectFit: "contain" }
+          }
+        />
+      )}
 
       {/* fixed-size design canvas, scaled to fit → identical everywhere */}
       <div
@@ -1206,18 +1232,20 @@ export default function BookFace({
           </div>
         </div>
 
-        {/* minimal page number, magazine-style */}
-        <div
-          className="absolute bottom-4 text-[11px] tracking-widest"
-          style={{
-            color: c.inkSoft,
-            fontFamily: theme.fonts.mono,
-            opacity: 0.7,
-            ...(side === "left" ? { left: 28 } : { right: 28 }),
-          }}
-        >
-          {pageNumber}
-        </div>
+        {/* minimal page number, magazine-style (hidden on the closing page) */}
+        {!content.isEnd && (
+          <div
+            className="absolute bottom-4 text-[11px] tracking-widest"
+            style={{
+              color: c.inkSoft,
+              fontFamily: theme.fonts.mono,
+              opacity: 0.7,
+              ...(side === "left" ? { left: 28 } : { right: 28 }),
+            }}
+          >
+            {pageNumber}
+          </div>
+        )}
       </div>
     </div>
   );

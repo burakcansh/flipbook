@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listBooksByOwner, saveBook } from "@/lib/db";
+import { ensureShareCode, listBooksByOwner, saveBook } from "@/lib/db";
 import { getOwnerIdFromRequest } from "@/lib/serverAuth";
-import { createDefaultBook } from "@/lib/defaults";
+import { createDefaultBook, createDefaultCertificate } from "@/lib/defaults";
 import { createBookFromTemplate } from "@/lib/templates";
 import { isThemeKey } from "@/lib/themes";
 import type { BookSummary, ThemeKey } from "@/lib/types";
@@ -34,10 +34,15 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as {
     themeKey?: ThemeKey;
     templateKey?: string;
+    docType?: "book" | "certificate";
+    locale?: "tr" | "en";
   };
 
   let book = null;
-  if (body.templateKey) {
+  if (body.docType === "certificate") {
+    book = createDefaultCertificate(ownerId, body.locale === "en" ? "en" : "tr");
+  }
+  if (!book && body.templateKey) {
     book = createBookFromTemplate(ownerId, body.templateKey);
   }
   if (!book) {
@@ -47,6 +52,7 @@ export async function POST(req: NextRequest) {
     book = createDefaultBook(ownerId, themeKey);
   }
 
+  await ensureShareCode(book);
   await saveBook(book);
   return NextResponse.json({ book }, { status: 201 });
 }

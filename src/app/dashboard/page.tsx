@@ -6,10 +6,12 @@ import TopBar from "@/components/TopBar";
 import { deleteBook, listMyBooks } from "@/lib/api";
 import { useAuth } from "@/lib/owner";
 import { getTheme } from "@/lib/themes";
+import { useT } from "@/lib/LangProvider";
 import type { BookSummary } from "@/lib/types";
 
 export default function DashboardPage() {
   const { user } = useAuth(true);
+  const t = useT();
   const [books, setBooks] = useState<BookSummary[] | null>(null);
   const name = user?.name ?? "";
 
@@ -19,7 +21,7 @@ export default function DashboardPage() {
   }, [user]);
 
   async function onDelete(id: string) {
-    if (!confirm("Bu kitabı silmek istediğine emin misin?")) return;
+    if (!confirm(t.dashboard.confirmDelete)) return;
     await deleteBook(id);
     setBooks((b) => (b ? b.filter((x) => x.id !== id) : b));
   }
@@ -31,15 +33,15 @@ export default function DashboardPage() {
         <div className="mb-6 flex items-end justify-between">
           <div>
             <h1 className="text-2xl font-bold text-amber-950">
-              Merhaba{name ? `, ${name}` : ""} 👋
+              {t.dashboard.greeting(name)}
             </h1>
-            <p className="text-sm text-amber-900/60">Kitaplarını yönet.</p>
+            <p className="text-sm text-amber-900/60">{t.dashboard.subtitle}</p>
           </div>
           <Link
             href="/new"
             className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-white shadow hover:bg-amber-800"
           >
-            ＋ Yeni Kitap
+            {t.dashboard.newBook}
           </Link>
         </div>
 
@@ -54,12 +56,12 @@ export default function DashboardPage() {
         {books && books.length === 0 && (
           <div className="rounded-2xl border border-dashed border-amber-900/30 bg-white/40 px-6 py-16 text-center">
             <div className="mb-3 text-4xl">📚</div>
-            <p className="text-amber-900/70">Henüz bir kitabın yok.</p>
+            <p className="text-amber-900/70">{t.dashboard.empty}</p>
             <Link
               href="/new"
               className="mt-4 inline-block rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-white hover:bg-amber-800"
             >
-              İlk kitabını oluştur
+              {t.dashboard.createFirst}
             </Link>
           </div>
         )}
@@ -85,7 +87,7 @@ export default function DashboardPage() {
                       className="line-clamp-3 text-sm font-semibold"
                       style={{ fontFamily: theme.fonts.display }}
                     >
-                      {b.name || b.title || "Adsız kitap"}
+                      {b.name || b.title || t.common.untitledBook}
                     </span>
                   </Link>
                   <div className="flex flex-1 flex-col gap-2 p-3">
@@ -97,7 +99,9 @@ export default function DashboardPage() {
                             : "bg-gray-100 text-gray-500"
                         }`}
                       >
-                        {b.status === "published" ? "Yayında" : "Taslak"}
+                        {b.status === "published"
+                          ? t.common.published
+                          : t.common.draft}
                       </span>
                       <span className="text-[11px] text-gray-400">
                         {theme.name}
@@ -108,7 +112,7 @@ export default function DashboardPage() {
                         href={`/editor/${b.id}`}
                         className="flex-1 rounded-md border border-amber-700 px-2 py-1.5 text-center text-xs font-medium text-amber-800 hover:bg-amber-50"
                       >
-                        Düzenle
+                        {t.common.edit}
                       </Link>
                       {b.status === "published" && b.slug && (
                         <Link
@@ -116,14 +120,14 @@ export default function DashboardPage() {
                           target="_blank"
                           className="rounded-md border border-gray-300 px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
                         >
-                          Aç
+                          {t.common.open}
                         </Link>
                       )}
                       <button
                         onClick={() => onDelete(b.id)}
                         className="rounded-md border border-gray-300 px-2 py-1.5 text-xs text-red-500 hover:bg-red-50"
                       >
-                        Sil
+                        {t.common.delete}
                       </button>
                     </div>
                   </div>

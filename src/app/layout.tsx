@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Inter, Lora, Caveat } from "next/font/google";
 import "./globals.css";
+import { LangProvider } from "@/lib/LangProvider";
 
 const playfair = Playfair_Display({
   subsets: ["latin", "latin-ext"],
@@ -42,7 +43,9 @@ export default function RootLayout({
       lang="tr"
       className={`${playfair.variable} ${inter.variable} ${lora.variable} ${caveat.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <LangProvider>{children}</LangProvider>
+      </body>
     </html>
   );
 }

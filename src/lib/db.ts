@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import type { Book } from "./types";
 import { supabaseEnabled, supabaseAdmin } from "./supabase";
+import { genShareCode } from "./ids";
 
 export interface User {
   id: string;
@@ -174,6 +175,48 @@ export async function slugExists(slug: string): Promise<boolean> {
     return !!data;
   }
   return Object.values(readDb().books).some((b) => b.slug === slug);
+}
+
+/** Find a published book by its 5-digit share code. */
+export async function getBookByShareCode(code: string): Promise<Book | null> {
+  if (supabaseEnabled) {
+    const { data } = await supabaseAdmin()
+      .from("books")
+      .select("*")
+      .eq("cover->>shareCode", code)
+      .eq("status", "published")
+      .maybeSingle();
+    return data ? rowToBook(data as BookRow) : null;
+  }
+  return (
+    Object.values(readDb().books).find(
+      (b) => b.cover.shareCode === code && b.status === "published"
+    ) ?? null
+  );
+}
+
+export async function shareCodeExists(code: string): Promise<boolean> {
+  if (supabaseEnabled) {
+    const { data } = await supabaseAdmin()
+      .from("books")
+      .select("id")
+      .eq("cover->>shareCode", code)
+      .maybeSingle();
+    return !!data;
+  }
+  return Object.values(readDb().books).some((b) => b.cover.shareCode === code);
+}
+
+/** Give the book a unique 5-digit share code if it doesn't have one yet. */
+export async function ensureShareCode(book: Book): Promise<void> {
+  if (book.cover.shareCode && /^\d{5}$/.test(book.cover.shareCode)) return;
+  let code = genShareCode();
+  let guard = 0;
+  while ((await shareCodeExists(code)) && guard < 30) {
+    code = genShareCode();
+    guard++;
+  }
+  book.cover = { ...book.cover, shareCode: code };
 }
 
 export async function saveBook(book: Book): Promise<Book> {

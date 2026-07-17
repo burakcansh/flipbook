@@ -2,11 +2,13 @@
 
 import { useRef, useState } from "react";
 import { fetchVideoMeta, uploadImage, uploadVideo } from "@/lib/api";
+import { pdfToJpegBlobs } from "@/lib/pdfToImages";
 import { genId } from "@/lib/ids";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { BG_LIBRARY } from "@/lib/backgrounds";
 import { SOCIAL_LIST, SocialIcon } from "@/lib/socialIcons";
 import { getTextBlocks } from "@/lib/textBlocks";
+import { useT } from "@/lib/LangProvider";
 import type {
   BookPage,
   ImageAlign,
@@ -38,6 +40,7 @@ function TextBlockRow({
   onRemove: () => void;
   canRemove: boolean;
 }) {
+  const t = useT();
   const ref = useRef<HTMLTextAreaElement | null>(null);
 
   function wrap(mark: string) {
@@ -64,7 +67,7 @@ function TextBlockRow({
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => wrap("**")}
-            title="Kalın"
+            title={t.ed.bold}
             className="h-6 w-6 rounded border border-amber-900/20 text-sm font-bold text-amber-900 hover:bg-amber-50"
           >
             B
@@ -73,7 +76,7 @@ function TextBlockRow({
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => wrap("_")}
-            title="İtalik"
+            title={t.ed.italic}
             className="h-6 w-6 rounded border border-amber-900/20 text-sm italic text-amber-900 hover:bg-amber-50"
           >
             I
@@ -84,7 +87,7 @@ function TextBlockRow({
             onClick={onRemove}
             className="text-xs text-red-400 hover:text-red-600"
           >
-            Sil
+            {t.ed.delete}
           </button>
         )}
       </div>
@@ -94,13 +97,13 @@ function TextBlockRow({
         onChange={(e) => onUpdate({ body: e.target.value })}
         onBlur={onCommit}
         rows={4}
-        placeholder="Metni buraya yaz…"
+        placeholder={t.ed.textPh}
         className="w-full resize-y rounded-lg border border-amber-900/20 bg-white px-3 py-2 leading-relaxed outline-none focus:border-amber-600"
       />
       <div className="mt-2 flex flex-wrap items-end gap-3">
         <div className="min-w-[8rem] flex-1">
           <label className="mb-1 block text-[11px] font-medium text-amber-900/70">
-            Yazı tipi
+            {t.ed.font}
           </label>
           <select
             value={block.fontFamily ?? ""}
@@ -119,7 +122,7 @@ function TextBlockRow({
         </div>
         <div className="w-24">
           <label className="mb-1 flex items-center justify-between text-[11px] font-medium text-amber-900/70">
-            <span>Boyut</span>
+            <span>{t.ed.size}</span>
             <span className="text-amber-900/50">{block.fontSize || 15}</span>
           </label>
           <input
@@ -134,7 +137,7 @@ function TextBlockRow({
         </div>
         <div>
           <label className="mb-1 block text-[11px] font-medium text-amber-900/70">
-            Renk
+            {t.ed.color}
           </label>
           <input
             type="color"
@@ -158,6 +161,7 @@ function TextBlocksEditor({
   onChange: (patch: Partial<BookPage>) => void;
   onCommit: () => void;
 }) {
+  const t = useT();
   const blocks = getTextBlocks(page);
 
   const write = (next: TextBlock[]) =>
@@ -191,7 +195,7 @@ function TextBlocksEditor({
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold text-amber-950">Metin blokları</h3>
+      <h3 className="text-sm font-semibold text-amber-950">{t.ed.textBlocks}</h3>
       {blocks.map((b) => (
         <TextBlockRow
           key={b.id}
@@ -206,7 +210,7 @@ function TextBlocksEditor({
         onClick={add}
         className="rounded-lg border border-dashed border-amber-700/50 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-50"
       >
-        ＋ Metin Ekle
+        {t.ed.addText}
       </button>
     </div>
   );
@@ -223,6 +227,7 @@ function ImageEditor({
   onChange: (patch: Partial<BookPage>) => void;
   onCommit: () => void;
 }) {
+  const t = useT();
   const im = page.image ?? null;
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -240,7 +245,7 @@ function ImageEditor({
     if (!files || files.length === 0) return;
     const file = Array.from(files).find((f) => f.type.startsWith("image/"));
     if (!file) {
-      setError("Lütfen bir görsel dosyası seç.");
+      setError(t.ed.pickImage);
       return;
     }
     setUploading(true);
@@ -257,7 +262,7 @@ function ImageEditor({
       });
       onCommit();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Yükleme başarısız oldu.");
+      setError(e instanceof Error ? e.message : t.ed.uploadFailed);
     } finally {
       setUploading(false);
     }
@@ -335,14 +340,12 @@ function ImageEditor({
         <div className="text-2xl">🖼️</div>
         <p className="mt-1 text-sm font-medium text-amber-900">
           {uploading
-            ? "Yükleniyor…"
+            ? t.ed.uploading
             : im?.src
-            ? "Görseli değiştir"
-            : "Görseli buraya sürükle ya da seç"}
+            ? t.ed.changeImage
+            : t.ed.dropImage}
         </p>
-        <p className="text-xs text-amber-900/50">
-          JPG, PNG, GIF, WEBP, AVIF, SVG, BMP, HEIC… (en fazla 12 MB)
-        </p>
+        <p className="text-xs text-amber-900/50">{t.ed.imageFormats}</p>
         <input
           ref={inputRef}
           type="file"
@@ -363,7 +366,7 @@ function ImageEditor({
               }}
               className="text-xs font-medium text-red-500 hover:text-red-600"
             >
-              🗑 Görseli kaldır
+              {t.ed.removeImage}
             </button>
           </div>
           {/* interactive preview with drag-to-resize handle */}
@@ -388,7 +391,7 @@ function ImageEditor({
                   onPointerMove={onResizeMove}
                   onPointerUp={onResizeUp}
                   onPointerCancel={onResizeUp}
-                  title="Sürükleyerek boyutlandır"
+                  title={t.ed.dragResize}
                   className="absolute -bottom-2 -right-2 flex h-6 w-6 cursor-nwse-resize items-center justify-center rounded-full bg-amber-700 text-white shadow-md"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
@@ -403,7 +406,7 @@ function ImageEditor({
           {/* scale slider */}
           <div>
             <label className="mb-1 flex items-center justify-between text-xs font-medium text-amber-900/70">
-              <span>Boyut</span>
+              <span>{t.ed.size}</span>
               <span className="tabular-nums text-amber-900/50">
                 %{Math.round((im.scale || 0.8) * 100)}
               </span>
@@ -423,12 +426,12 @@ function ImageEditor({
           {/* alignment */}
           <div>
             <label className="mb-1 block text-xs font-medium text-amber-900/70">
-              Hizalama
+              {t.ed.align}
             </label>
             <div className="flex gap-1 rounded-lg bg-amber-100/60 p-1">
-              {alignBtn("left", "⬅︎ Sol")}
-              {alignBtn("center", "◼︎ Orta")}
-              {alignBtn("right", "Sağ ➡︎")}
+              {alignBtn("left", t.ed.left)}
+              {alignBtn("center", t.ed.center)}
+              {alignBtn("right", t.ed.right)}
             </div>
           </div>
         </>
@@ -437,13 +440,13 @@ function ImageEditor({
       {/* caption */}
       <div>
         <label className="mb-1 block text-xs font-medium text-amber-900/70">
-          Açıklama (opsiyonel)
+          {t.ed.caption}
         </label>
         <input
           value={page.caption ?? ""}
           onChange={(e) => onChange({ caption: e.target.value })}
           onBlur={onCommit}
-          placeholder="Görsel altına küçük bir not"
+          placeholder={t.ed.captionPh}
           className="w-full rounded-lg border border-amber-900/20 bg-white px-3 py-2 outline-none focus:border-amber-600"
         />
       </div>
@@ -464,6 +467,7 @@ function VideoEditor({
   onChange: (patch: Partial<BookPage>) => void;
   onCommit: () => void;
 }) {
+  const t = useT();
   const [videoUrl, setVideoUrl] = useState(page.video?.url ?? "");
   const [loadingMeta, setLoadingMeta] = useState(false);
   const [metaError, setMetaError] = useState<string | null>(null);
@@ -481,13 +485,13 @@ function VideoEditor({
     try {
       const meta = await fetchVideoMeta(url);
       if (!meta) {
-        setMetaError("Bağlantı çözümlenemedi. YouTube/Vimeo linki mi?");
+        setMetaError(t.ed.videoLinkFailed);
         onChange({ video: null });
       } else {
         onChange({ video: { ...meta, scale: keepScale() } });
       }
     } catch {
-      setMetaError("Bir hata oluştu.");
+      setMetaError(t.ed.errorGeneric);
     } finally {
       setLoadingMeta(false);
       onCommit();
@@ -497,7 +501,7 @@ function VideoEditor({
   async function handleFile(file?: File | null) {
     if (!file) return;
     if (!file.type.startsWith("video/")) {
-      setUploadErr("Lütfen bir video dosyası seç.");
+      setUploadErr(t.ed.pickVideo);
       return;
     }
     setUploading(true);
@@ -515,7 +519,7 @@ function VideoEditor({
       });
       onCommit();
     } catch (e) {
-      setUploadErr(e instanceof Error ? e.message : "Video yüklenemedi.");
+      setUploadErr(e instanceof Error ? e.message : t.ed.videoUploadFailed);
     } finally {
       setUploading(false);
     }
@@ -527,7 +531,7 @@ function VideoEditor({
     <div className="flex flex-col gap-3">
       <div>
         <label className="mb-1 block text-xs font-medium text-amber-900/70">
-          Video bağlantısı (YouTube / Vimeo)
+          {t.ed.videoLink}
         </label>
         <div className="flex gap-2">
           <input
@@ -544,7 +548,7 @@ function VideoEditor({
             disabled={loadingMeta || !videoUrl.trim()}
             className="shrink-0 rounded-lg bg-amber-700 px-3 py-2 text-sm font-medium text-white hover:bg-amber-800 disabled:opacity-50"
           >
-            {loadingMeta ? "…" : "Getir"}
+            {loadingMeta ? "…" : t.ed.fetch}
           </button>
         </div>
         {metaError && <p className="mt-1 text-xs text-red-500">{metaError}</p>}
@@ -552,7 +556,7 @@ function VideoEditor({
 
       <div className="flex items-center gap-3 text-xs text-amber-900/40">
         <span className="h-px flex-1 bg-amber-900/15" />
-        veya cihazdan yükle
+        {t.ed.orUploadDevice}
         <span className="h-px flex-1 bg-amber-900/15" />
       </div>
 
@@ -574,11 +578,9 @@ function VideoEditor({
       >
         <span className="text-2xl">🎬</span>
         <span className="mt-1 text-sm font-medium text-amber-900">
-          {uploading ? "Yükleniyor…" : "Bilgisayar veya telefondan video yükle"}
+          {uploading ? t.ed.uploading : t.ed.videoUploadDevice}
         </span>
-        <span className="text-xs text-amber-900/50">
-          MP4, WEBM, MOV, M4V… (en fazla 200 MB)
-        </span>
+        <span className="text-xs text-amber-900/50">{t.ed.videoFormats}</span>
       </div>
       {uploadErr && <p className="text-xs text-red-500">{uploadErr}</p>}
 
@@ -609,7 +611,7 @@ function VideoEditor({
                 {v.title}
               </div>
               <div className="text-xs text-gray-400">
-                {v.provider === "local" ? "cihazdan yüklendi" : v.provider}
+                {v.provider === "local" ? t.ed.uploadedFromDevice : v.provider}
               </div>
             </div>
             <button
@@ -619,13 +621,13 @@ function VideoEditor({
               }}
               className="self-start text-xs text-red-400 hover:text-red-600"
             >
-              Kaldır
+              {t.ed.remove}
             </button>
           </div>
 
           <div>
             <label className="mb-1 flex items-center justify-between text-xs font-medium text-amber-900/70">
-              <span>Video boyutu</span>
+              <span>{t.ed.videoSize}</span>
               <span className="tabular-nums text-amber-900/50">
                 %{Math.round((v.scale ?? 0.7) * 100)}
               </span>
@@ -654,16 +656,63 @@ function BackgroundEditor({
   page,
   onChange,
   onCommit,
+  onImportPdf,
 }: {
   page: BookPage;
   onChange: (patch: Partial<BookPage>) => void;
   onCommit: () => void;
+  /** Multi-page import: page 1 → this page's bg, the rest → new pages. */
+  onImportPdf?: (urls: string[]) => void;
 }) {
+  const t = useT();
   const [uploading, setUploading] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState<{ d: number; t: number } | null>(
+    null
+  );
   const fileRef = useRef<HTMLInputElement | null>(null);
 
+  const isPdf = (f: File) =>
+    f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+
   async function upload(file?: File | null) {
-    if (!file || !file.type.startsWith("image/")) return;
+    if (!file) return;
+
+    // PDF → render each page to an image; page 1 becomes this page's
+    // background, extra pages are appended as new pages (if supported).
+    if (isPdf(file)) {
+      setUploading(true);
+      setPdfProgress({ d: 0, t: 0 });
+      try {
+        const blobs = await pdfToJpegBlobs(file, (d, total) =>
+          setPdfProgress({ d, t: total })
+        );
+        const urls: string[] = [];
+        for (let i = 0; i < blobs.length; i++) {
+          const f = new File([blobs[i]], `pdf-${i + 1}.jpg`, {
+            type: "image/jpeg",
+          });
+          // eslint-disable-next-line no-await-in-loop
+          const { url } = await uploadImage(f);
+          urls.push(url);
+          setPdfProgress({ d: blobs.length + i + 1, t: blobs.length * 2 });
+        }
+        if (urls.length === 0) return;
+        if (onImportPdf && urls.length > 1) {
+          onImportPdf(urls);
+        } else {
+          onChange({ bgImage: urls[0], bgColor: null });
+          onCommit();
+        }
+      } catch {
+        alert(t.ed.pdfBgFailed);
+      } finally {
+        setUploading(false);
+        setPdfProgress(null);
+      }
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) return;
     setUploading(true);
     try {
       const { url } = await uploadImage(file);
@@ -676,10 +725,18 @@ function BackgroundEditor({
     }
   }
 
+  const uploadLabel = pdfProgress
+    ? pdfProgress.t
+      ? `${t.ed.pdfConverting} ${Math.min(pdfProgress.d, pdfProgress.t)}/${
+          pdfProgress.t
+        }`
+      : t.ed.pdfConverting
+    : t.ed.uploading;
+
   return (
     <div className="mt-2 border-t border-amber-900/10 pt-4">
       <h3 className="mb-2 text-sm font-semibold text-amber-950">
-        Sayfa arka planı
+        {t.ed.pageBg}
       </h3>
 
       {/* double-page spread toggle */}
@@ -694,16 +751,15 @@ function BackgroundEditor({
           className="mt-0.5 h-4 w-4 accent-amber-700"
         />
         <span className="text-xs text-amber-900/80">
-          <strong>Yanındaki sayfayla birleştir (çift sayfa)</strong>
+          <strong>{t.ed.spread}</strong>
           <br />
-          Bu arka plan iki komşu sayfaya kesintisiz yayılır. Aynı arka plan
-          otomatik olarak yan sayfaya da uygulanır.
+          {t.ed.spreadHint}
         </span>
       </label>
 
       {/* ready-made glossy 3D backgrounds */}
       <div className="mb-1 text-xs font-medium text-amber-900/70">
-        Hazır 3D arka planlar
+        {t.ed.bg3d}
       </div>
       <div className="mb-3 grid grid-cols-5 gap-2">
         {BG_LIBRARY.map((bg) => {
@@ -728,7 +784,9 @@ function BackgroundEditor({
       </div>
 
       <div className="mb-3 flex items-center gap-3">
-        <label className="text-xs font-medium text-amber-900/70">Renk</label>
+        <label className="text-xs font-medium text-amber-900/70">
+          {t.ed.color}
+        </label>
         <input
           type="color"
           value={page.bgColor || "#f3e9d2"}
@@ -744,7 +802,7 @@ function BackgroundEditor({
             }}
             className="text-xs text-red-400 hover:text-red-600"
           >
-            Rengi kaldır
+            {t.ed.removeColor}
           </button>
         )}
       </div>
@@ -752,7 +810,7 @@ function BackgroundEditor({
       <input
         ref={fileRef}
         type="file"
-        accept="image/*"
+        accept="image/*,application/pdf"
         className="hidden"
         onChange={(e) => upload(e.target.files?.[0])}
       />
@@ -766,9 +824,10 @@ function BackgroundEditor({
           />
           <button
             onClick={() => fileRef.current?.click()}
-            className="rounded-md border border-amber-700 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-50"
+            disabled={uploading}
+            className="rounded-md border border-amber-700 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-50 disabled:opacity-60"
           >
-            {uploading ? "Yükleniyor…" : "Değiştir"}
+            {uploading ? uploadLabel : t.ed.change}
           </button>
           <button
             onClick={() => {
@@ -777,17 +836,19 @@ function BackgroundEditor({
             }}
             className="text-xs text-red-400 hover:text-red-600"
           >
-            Kaldır
+            {t.ed.remove}
           </button>
         </div>
       ) : (
         <button
           onClick={() => fileRef.current?.click()}
-          className="w-full rounded-lg border border-dashed border-amber-700/50 px-3 py-2 text-xs font-medium text-amber-800 hover:bg-amber-50"
+          disabled={uploading}
+          className="w-full rounded-lg border border-dashed border-amber-700/50 px-3 py-2 text-xs font-medium text-amber-800 hover:bg-amber-50 disabled:opacity-60"
         >
-          {uploading ? "Yükleniyor…" : "🖼️ Arka plan görseli yükle"}
+          {uploading ? uploadLabel : t.ed.bgUpload}
         </button>
       )}
+      <p className="mt-1 text-[11px] text-amber-900/50">{t.ed.pdfBgHint}</p>
     </div>
   );
 }
@@ -803,6 +864,7 @@ function LinksEditor({
   onChange: (patch: Partial<BookPage>) => void;
   onCommit: () => void;
 }) {
+  const t = useT();
   const links = page.links ?? [];
   const [platform, setPlatform] = useState<LinkPlatform>("instagram");
   const [url, setUrl] = useState("");
@@ -849,17 +911,15 @@ function LinksEditor({
 
   const options: { key: LinkPlatform; label: string }[] = [
     ...SOCIAL_LIST.map((s) => ({ key: s.platform as LinkPlatform, label: s.label })),
-    { key: "custom", label: "Özel" },
+    { key: "custom", label: t.ed.custom },
   ];
 
   return (
     <div className="mt-2 border-t border-amber-900/10 pt-4">
       <h3 className="mb-1 text-sm font-semibold text-amber-950">
-        Bağlantılar (logo)
+        {t.ed.linksTitle}
       </h3>
-      <p className="mb-3 text-xs text-amber-900/55">
-        Sayfaya tıklanabilir logo ekle. Önizlemede sürükleyip boyutlandırabilirsin.
-      </p>
+      <p className="mb-3 text-xs text-amber-900/55">{t.ed.linksHint}</p>
 
       {/* platform picker */}
       <div className="mb-2 flex flex-wrap gap-1.5">
@@ -898,7 +958,11 @@ function LinksEditor({
             onClick={() => iconRef.current?.click()}
             className="rounded-lg border border-amber-700 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-50"
           >
-            {uploading ? "Yükleniyor…" : customIcon ? "Logoyu değiştir" : "Logo yükle"}
+            {uploading
+              ? t.ed.uploading
+              : customIcon
+              ? t.ed.changeLogo
+              : t.ed.uploadLogo}
           </button>
           {customIcon && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -926,7 +990,7 @@ function LinksEditor({
           disabled={!url.trim() || (platform === "custom" && !customIcon)}
           className="shrink-0 rounded-lg bg-amber-700 px-3 py-2 text-sm font-medium text-white hover:bg-amber-800 disabled:opacity-50"
         >
-          Ekle
+          {t.ed.add}
         </button>
       </div>
 
@@ -962,7 +1026,7 @@ function LinksEditor({
                 onClick={() => remove(l.id)}
                 className="text-xs text-red-400 hover:text-red-600"
               >
-                Sil
+                {t.ed.delete}
               </button>
             </li>
           ))}
@@ -978,28 +1042,41 @@ export default function PageEditor({
   page,
   onChange,
   onCommit,
+  onImportPdf,
 }: {
   page: BookPage;
   /** fires on every keystroke — drives the live preview */
   onChange: (patch: Partial<BookPage>) => void;
   /** fires on blur — drives the debounced DB save */
   onCommit: () => void;
+  /** multi-page PDF background import (only for real pages, not the end page) */
+  onImportPdf?: (urls: string[]) => void;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-5">
       <TextBlocksEditor page={page} onChange={onChange} onCommit={onCommit} />
 
       <div className="border-t border-amber-900/10 pt-4">
-        <h3 className="mb-2 text-sm font-semibold text-amber-950">Görsel</h3>
+        <h3 className="mb-2 text-sm font-semibold text-amber-950">
+          {t.ed.imageSection}
+        </h3>
         <ImageEditor page={page} onChange={onChange} onCommit={onCommit} />
       </div>
 
       <div className="border-t border-amber-900/10 pt-4">
-        <h3 className="mb-2 text-sm font-semibold text-amber-950">Video</h3>
+        <h3 className="mb-2 text-sm font-semibold text-amber-950">
+          {t.ed.videoSection}
+        </h3>
         <VideoEditor page={page} onChange={onChange} onCommit={onCommit} />
       </div>
 
-      <BackgroundEditor page={page} onChange={onChange} onCommit={onCommit} />
+      <BackgroundEditor
+        page={page}
+        onChange={onChange}
+        onCommit={onCommit}
+        onImportPdf={onImportPdf}
+      />
       <LinksEditor page={page} onChange={onChange} onCommit={onCommit} />
     </div>
   );

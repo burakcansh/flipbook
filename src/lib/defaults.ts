@@ -1,5 +1,59 @@
 import { genId } from "./ids";
-import type { Book, BookPage, ThemeKey } from "./types";
+import { getDict, type Locale } from "./i18n";
+import type {
+  Book,
+  BookPage,
+  CertificatePersonnel,
+  ThemeKey,
+} from "./types";
+
+export function blankPersonnel(locale: Locale = "tr"): CertificatePersonnel {
+  return {
+    id: genId("prs_"),
+    fullName: "",
+    date: new Date().toLocaleDateString(locale === "en" ? "en-GB" : "tr-TR"),
+    trainingType: "",
+    trainingSubject: "",
+    company: "",
+    branch: "",
+  };
+}
+
+export function createDefaultCertificate(
+  ownerId: string,
+  locale: Locale = "tr"
+): Book {
+  const now = Date.now();
+  const c = getDict(locale).cert;
+  return {
+    id: genId("b_"),
+    ownerId,
+    themeKey: "corporate",
+    cover: {
+      title: c.defName,
+      subtitle: "",
+      name: c.defName,
+      docType: "certificate",
+      certificate: {
+        title: c.defTitle,
+        subtitle: c.defSubtitle,
+        body: c.defBody,
+        template: "classic",
+        accent: "#b8923f",
+        logo: null,
+        bgImage: null,
+        signerName: "",
+        signerTitle: c.defSignerTitle,
+        personnel: [blankPersonnel(locale)],
+      },
+    },
+    pages: [],
+    status: "draft",
+    slug: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
 
 export function blankTextPage(): BookPage {
   return {

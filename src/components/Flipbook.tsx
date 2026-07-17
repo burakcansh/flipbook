@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BookCover, BookPage } from "@/lib/types";
 import type { Theme } from "@/lib/themes";
 import BookFace, { type FaceContent } from "./BookFace";
+import { isPageEmpty } from "@/lib/textBlocks";
 import { playFlipSound } from "@/lib/sound";
 
 interface Leaf {
@@ -18,13 +19,23 @@ interface Leaf {
  * This guarantees no page is skipped (the classic "page 2 missing" bug).
  */
 function buildLeaves(cover: BookCover, pages: BookPage[]): Leaf[] {
+  // The very last face is either the editable closing page or the default "SON".
+  const hasEnd = !!cover.endPage && !isPageEmpty(cover.endPage);
+  const endFace: FaceContent = hasEnd
+    ? {
+        type: "page",
+        page: cover.endPage as BookPage,
+        pageNumber: pages.length + 1,
+        isEnd: true,
+      }
+    : { type: "back-cover" };
+
   const leaves: Leaf[] = [];
   leaves.push({
     front: { type: "cover", cover },
-    back: pages[0]
-      ? { type: "page", page: pages[0], pageNumber: 1 }
-      : { type: "blank" },
+    back: pages[0] ? { type: "page", page: pages[0], pageNumber: 1 } : endFace,
   });
+  let endPlaced = !pages[0];
 
   let i = 1;
   while (i < pages.length) {
@@ -34,11 +45,19 @@ function buildLeaves(cover: BookCover, pages: BookPage[]): Leaf[] {
       pageNumber: i + 1,
     };
     const backPage = pages[i + 1];
-    const back: FaceContent = backPage
-      ? { type: "page", page: backPage, pageNumber: i + 2 }
-      : { type: "back-cover" };
+    let back: FaceContent;
+    if (backPage) {
+      back = { type: "page", page: backPage, pageNumber: i + 2 };
+    } else {
+      back = endFace;
+      endPlaced = true;
+    }
     leaves.push({ front, back });
     i += 2;
+  }
+  // Odd page count → the closing face still needs its own leaf.
+  if (!endPlaced) {
+    leaves.push({ front: { type: "blank" }, back: endFace });
   }
   return leaves;
 }
@@ -72,12 +91,20 @@ export default function Flipbook({
   // On mobile we show a single page at a time. `half` = which page of the open
   // spread is centered: 0 = left page, 1 = right page.
   const [half, setHalf] = useState(0);
+  // Reader zoom (1 = fit) with drag-to-pan while zoomed in.
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [panning, setPanning] = useState(false);
   const sceneRef = useRef<HTMLDivElement | null>(null);
   const soundRef = useRef(true);
 
   const currentRef = useRef(0);
   const halfRef = useRef(0);
   const mobileRef = useRef(false);
+  const zoomRef = useRef(1);
+  const panStart = useRef<{ x: number; y: number; px: number; py: number } | null>(
+    null
+  );
   useEffect(() => {
     currentRef.current = current;
   }, [current]);
@@ -87,6 +114,14 @@ export default function Flipbook({
   useEffect(() => {
     mobileRef.current = isMobile;
   }, [isMobile]);
+  useEffect(() => {
+    zoomRef.current = zoom;
+    if (zoom === 1) setPan({ x: 0, y: 0 });
+  }, [zoom]);
+  // Recentre when the page changes.
+  useEffect(() => {
+    setPan({ x: 0, y: 0 });
+  }, [current, half]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640);
@@ -187,9 +222,53 @@ export default function Flipbook({
     return w / 2;
   };
 
+  // ---- zoom + pan (reader can enlarge a page and drag to move around) ----
+  const clampPan = (x: number, y: number, z: number) => {
+    const el = sceneRef.current;
+    if (!el) return { x, y };
+    // On mobile the scene holds two page-halves; confine panning to the single
+    // page the reader is zoomed into so it never drifts onto the neighbour.
+    const panWidth = mobileRef.current ? el.offsetWidth / 2 : el.offsetWidth;
+    const maxX = (panWidth * (z - 1)) / 2;
+    const maxY = (el.offsetHeight * (z - 1)) / 2;
+    return {
+      x: Math.max(-maxX, Math.min(maxX, x)),
+      y: Math.max(-maxY, Math.min(maxY, y)),
+    };
+  };
+  const changeZoom = (z: number) =>
+    setZoom(Math.max(1, Math.min(3, Math.round(z * 20) / 20)));
+  const onZoomPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (zoomRef.current <= 1) return;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    setPanning(true);
+    panStart.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
+  };
+  const onZoomPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!panStart.current) return;
+    const nx = panStart.current.px + (e.clientX - panStart.current.x);
+    const ny = panStart.current.py + (e.clientY - panStart.current.y);
+    setPan(clampPan(nx, ny, zoomRef.current));
+  };
+  const onZoomPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!panStart.current) return;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    panStart.current = null;
+    setPanning(false);
+  };
+
   // ---- pointer drag (mouse + touch): direction-based page turn ----
   // Grab anywhere and swipe: left → next page, right → previous page.
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (zoomRef.current > 1) return; // zoomed → wrapper handles panning
     if (drag) return;
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -200,6 +279,7 @@ export default function Flipbook({
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (zoomRef.current > 1) return;
     // Mobile: no real-time leaf follow (single-page mode) — just track movement.
     if (mobileRef.current) {
       setDrag((d) =>
@@ -234,6 +314,7 @@ export default function Flipbook({
   };
 
   const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (zoomRef.current > 1) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     setDrag((d) => {
@@ -281,6 +362,7 @@ export default function Flipbook({
     const el = sceneRef.current;
     if (!el) return;
     const handler = (e: WheelEvent) => {
+      if (zoomRef.current > 1) return; // zoomed → let the page scroll/pan freely
       const amount =
         Math.abs(e.deltaX) >= Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       if (Math.abs(amount) < 6) return;
@@ -330,30 +412,52 @@ export default function Flipbook({
   // page (filling the screen) with the neighbouring page peeking at the edge.
   let offset: string;
   if (isMobile) {
+    // A single leaf face is half the spread; ±25% of the book width centres it
+    // in the viewport regardless of screen size. Right-hand faces (cover, the
+    // right page) shift left; left-hand faces (left page, back cover) shift right.
     if (current === 0)
-      offset = "-45%"; // cover (right half) centered
+      offset = "-25%"; // cover (right half)
     else if (current >= total)
-      offset = "2%"; // back cover / last left page
-    else offset = half === 0 ? "2%" : "-44%"; // left page vs right page focus
+      offset = "25%"; // back cover / closing page (left half)
+    else offset = half === 0 ? "25%" : "-25%"; // left page vs right page focus
   } else {
     offset = current === 0 ? "-25%" : current >= total ? "25%" : "0%";
   }
 
+  // With the focused page centred, the zoom anchor is simply the viewport centre.
+  const zoomOriginX = 50;
+
   return (
     <div
       className={`flex w-full flex-col items-center gap-4 ${
-        isMobile ? "overflow-x-hidden" : ""
+        isMobile
+          ? "min-h-[calc(100dvh-64px)] justify-center overflow-x-hidden"
+          : ""
       }`}
     >
       <div
-        ref={sceneRef}
-        className="flip-scene relative mx-auto no-select"
-        style={
-          {
+        className="relative"
+        style={{
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transformOrigin: `${zoomOriginX}% center`,
+          transition: panning ? "none" : "transform 0.2s ease",
+          cursor: zoom > 1 ? (panning ? "grabbing" : "grab") : undefined,
+          touchAction: zoom > 1 ? "none" : undefined,
+        }}
+        onPointerDown={onZoomPointerDown}
+        onPointerMove={onZoomPointerMove}
+        onPointerUp={onZoomPointerUp}
+        onPointerCancel={onZoomPointerUp}
+      >
+        <div
+          ref={sceneRef}
+          className="flip-scene relative mx-auto no-select"
+          style={
+            {
             // Mobile: one page ≈ full screen width (book spread ≈ 2× screen),
             // so a single page fills and the neighbour peeks. Desktop: fit spread.
             width: isMobile
-              ? "min(172vw, calc((100vh - 120px) * 1.5))"
+              ? "min(182vw, calc((100dvh - 150px) * 1.5))"
               : "min(96vw, calc((100vh - 240px) * 1.5))",
             aspectRatio: "3 / 2",
             touchAction: "pan-y",
@@ -415,6 +519,40 @@ export default function Flipbook({
             );
           })}
         </div>
+        </div>
+      </div>
+
+      {/* zoom control (top, horizontal slider) */}
+      <div className="fixed left-1/2 top-16 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/15 bg-black/45 px-2.5 py-1 text-white/85 shadow-lg backdrop-blur sm:top-3">
+        <button
+          onClick={() => changeZoom(zoom - 0.25)}
+          disabled={zoom <= 1}
+          aria-label="Uzaklaştır"
+          className="flex h-6 w-6 items-center justify-center rounded-full text-lg leading-none hover:bg-white/10 disabled:opacity-30"
+        >
+          −
+        </button>
+        <input
+          type="range"
+          min={1}
+          max={3}
+          step={0.05}
+          value={zoom}
+          onChange={(e) => setZoom(Number(e.target.value))}
+          aria-label="Yakınlaştırma"
+          className="h-1 w-24 cursor-pointer accent-amber-400 sm:w-40"
+        />
+        <button
+          onClick={() => changeZoom(zoom + 0.25)}
+          disabled={zoom >= 3}
+          aria-label="Yakınlaştır"
+          className="flex h-6 w-6 items-center justify-center rounded-full text-lg leading-none hover:bg-white/10 disabled:opacity-30"
+        >
+          ＋
+        </button>
+        <span className="w-9 text-center text-[11px] tabular-nums text-white/70">
+          {Math.round(zoom * 100)}%
+        </span>
       </div>
 
       {/* large vector arrows on the sides of the book */}
@@ -442,11 +580,24 @@ export default function Flipbook({
       {/* minimal page indicator + sound toggle */}
       <div className="flex items-center gap-3 text-xs text-white/55">
         <span className="tabular-nums">
-          {current === 0
-            ? "Kapak"
-            : current >= total
-            ? "Arka kapak"
-            : `${current} / ${total - 1}`}
+          {(() => {
+            const totalPages = pages.length;
+            if (current === 0) return "Kapak";
+            const leftIdx = 2 * (current - 1); // 0-based left page of spread
+            const rightIdx = leftIdx + 1;
+            if (leftIdx >= totalPages)
+              return cover.endPage && !isPageEmpty(cover.endPage)
+                ? "Bitiş"
+                : "Arka kapak"; // closing page / back cover
+            if (isMobile) {
+              const idx = half === 1 ? rightIdx : leftIdx;
+              const no = Math.min(idx, totalPages - 1) + 1;
+              return `Sayfa ${no} / ${totalPages}`;
+            }
+            return rightIdx < totalPages
+              ? `Sayfa ${leftIdx + 1}–${rightIdx + 1} / ${totalPages}`
+              : `Sayfa ${leftIdx + 1} / ${totalPages}`;
+          })()}
         </span>
         <button
           onClick={toggleSound}

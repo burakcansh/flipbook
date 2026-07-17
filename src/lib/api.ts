@@ -36,7 +36,12 @@ export async function listMyBooks(): Promise<BookSummary[]> {
 }
 
 export async function createBook(
-  opts: { themeKey?: ThemeKey; templateKey?: string } = {}
+  opts: {
+    themeKey?: ThemeKey;
+    templateKey?: string;
+    docType?: "book" | "certificate";
+    locale?: "tr" | "en";
+  } = {}
 ): Promise<Book> {
   const res = await fetch("/api/books", {
     method: "POST",

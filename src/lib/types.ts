@@ -111,6 +111,43 @@ export interface BookCover {
   image?: string | null;
   /** optional full-bleed cover background video (autoplays muted, loops) */
   video?: VideoMeta | null;
+  /** optional editable closing page shown at the very end (replaces "SON") */
+  endPage?: BookPage | null;
+  /** 5-digit numeric code readers can type to open this book */
+  shareCode?: string;
+  /** which kind of document this is — a flipbook or a training certificate */
+  docType?: DocType;
+  /** certificate config + personnel records (when docType === "certificate") */
+  certificate?: Certificate | null;
+}
+
+export type DocType = "book" | "certificate";
+
+/** One person the certificate is issued to. */
+export interface CertificatePersonnel {
+  id: string;
+  fullName: string; // Adı Soyadı
+  date: string; // Tarih
+  trainingType: string; // Eğitim Türü
+  trainingSubject: string; // Eğitim Konusu
+  company: string; // Şirket Adı
+  branch: string; // Şube Adı
+}
+
+export type CertificateTemplate = "classic" | "modern" | "minimal";
+
+export interface Certificate {
+  title: string; // e.g. "KATILIM SERTİFİKASI"
+  subtitle: string; // small line under the title
+  /** body wording with placeholders: {ad} {tarih} {tur} {konu} {sirket} {sube} */
+  body: string;
+  template: CertificateTemplate;
+  accent: string; // hex accent colour
+  logo?: string | null; // optional logo image
+  bgImage?: string | null; // optional uploaded landscape background
+  signerName?: string;
+  signerTitle?: string;
+  personnel: CertificatePersonnel[];
 }
 
 export type BookStatus = "draft" | "published";

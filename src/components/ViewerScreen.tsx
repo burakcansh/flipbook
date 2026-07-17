@@ -4,10 +4,13 @@ import Link from "next/link";
 import Flipbook from "./Flipbook";
 import MusicPlayer from "./MusicPlayer";
 import { getTheme } from "@/lib/themes";
+import { isPageEmpty } from "@/lib/textBlocks";
 import type { PublicBook } from "@/lib/types";
 
 export default function ViewerScreen({ book }: { book: PublicBook }) {
   const theme = getTheme(book.themeKey);
+  // Skip fully-empty pages so accidental blank sheets never show to readers.
+  const pages = book.pages.filter((p) => !isPageEmpty(p));
 
   const bg =
     theme.key === "journal"
@@ -20,7 +23,7 @@ export default function ViewerScreen({ book }: { book: PublicBook }) {
 
   return (
     <main
-      className="relative min-h-screen"
+      className="relative min-h-screen overflow-x-hidden"
       style={{
         background: bg,
         // gallery-style vignette that darkens the edges
@@ -30,9 +33,14 @@ export default function ViewerScreen({ book }: { book: PublicBook }) {
       <div className="min-h-screen w-full">
         <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="text-white/90">
-            <div className="text-lg font-semibold" style={{ fontFamily: theme.fonts.display }}>
-              {book.cover.title || "Adsız kitap"}
-            </div>
+            {book.cover.title && (
+              <div
+                className="text-lg font-semibold"
+                style={{ fontFamily: theme.fonts.display }}
+              >
+                {book.cover.title}
+              </div>
+            )}
             {book.cover.subtitle && (
               <div className="text-sm text-white/50">{book.cover.subtitle}</div>
             )}
@@ -46,7 +54,7 @@ export default function ViewerScreen({ book }: { book: PublicBook }) {
         </header>
 
         <div className="mx-auto flex w-full flex-col items-center px-4 pb-10 pt-2">
-          <Flipbook cover={book.cover} pages={book.pages} theme={theme} />
+          <Flipbook cover={book.cover} pages={pages} theme={theme} />
         </div>
       </div>
 

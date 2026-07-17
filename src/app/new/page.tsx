@@ -7,22 +7,29 @@ import { createBook } from "@/lib/api";
 import { useAuth } from "@/lib/owner";
 import { THEME_LIST, getTheme } from "@/lib/themes";
 import { TEMPLATES } from "@/lib/templates";
+import { useT, useLocale } from "@/lib/LangProvider";
 import type { ThemeKey } from "@/lib/types";
 
 export default function NewBookPage() {
   const router = useRouter();
+  const t = useT();
+  const [locale] = useLocale();
   const [creating, setCreating] = useState<string | null>(null);
   useAuth(true);
 
-  async function create(opts: { themeKey?: ThemeKey; templateKey?: string }) {
+  async function create(opts: {
+    themeKey?: ThemeKey;
+    templateKey?: string;
+    docType?: "book" | "certificate";
+  }) {
     if (creating) return;
-    setCreating(opts.templateKey ?? opts.themeKey ?? "x");
+    setCreating(opts.docType ?? opts.templateKey ?? opts.themeKey ?? "x");
     try {
-      const book = await createBook(opts);
+      const book = await createBook({ ...opts, locale });
       router.push(`/editor/${book.id}`);
     } catch {
       setCreating(null);
-      alert("Kitap oluşturulamadı, tekrar dene.");
+      alert(t.create.failed);
     }
   }
 
@@ -30,6 +37,43 @@ export default function NewBookPage() {
     <div className="min-h-screen bg-[#efe6d2]">
       <TopBar />
       <main className="mx-auto max-w-5xl px-4 py-10">
+        {/* ---- What do you want to create? ---- */}
+        <h1 className="text-2xl font-bold text-amber-950">{t.create.heading}</h1>
+        <p className="mb-5 text-sm text-amber-900/60">{t.create.sub}</p>
+        <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col justify-between rounded-2xl border border-amber-900/15 bg-white p-5 shadow-sm">
+            <div>
+              <div className="text-3xl">📖</div>
+              <div className="mt-2 text-lg font-semibold text-amber-950">
+                {t.create.bookTitle}
+              </div>
+              <p className="mt-1 text-sm text-amber-900/60">
+                {t.create.bookDesc}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => create({ docType: "certificate" })}
+            disabled={!!creating}
+            className="group flex flex-col justify-between rounded-2xl border border-amber-700/40 bg-gradient-to-br from-amber-50 to-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-60"
+          >
+            <div>
+              <div className="text-3xl">🎓</div>
+              <div className="mt-2 text-lg font-semibold text-amber-950">
+                {t.create.certTitle}
+              </div>
+              <p className="mt-1 text-sm text-amber-900/60">
+                {t.create.certDesc}
+              </p>
+            </div>
+            <span className="mt-3 inline-block text-sm font-medium text-amber-700">
+              {creating === "certificate"
+                ? t.create.creating
+                : t.create.certCreate}
+            </span>
+          </button>
+        </div>
+
         {/* ---- Magazine templates ---- */}
         <h1 className="text-2xl font-bold text-amber-950">
           Hazır dergi şablonları

@@ -23,3 +23,21 @@ export function getTextBlocks(page: BookPage): TextBlock[] {
   }
   return [];
 }
+
+/**
+ * A page is "empty" when it carries no visible content at all: no text,
+ * no image/video, no background, no links or caption. Such pages would
+ * render as a blank white sheet in the viewer, so we skip them there.
+ */
+export function isPageEmpty(page: BookPage): boolean {
+  const hasText = getTextBlocks(page).some((t) => (t.body || "").trim().length > 0);
+  return !(
+    hasText ||
+    !!page.image?.src ||
+    !!page.video ||
+    !!page.bgImage ||
+    !!page.bgColor ||
+    (page.links?.length ?? 0) > 0 ||
+    !!(page.caption && page.caption.trim())
+  );
+}

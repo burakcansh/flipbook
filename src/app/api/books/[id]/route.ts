@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { deleteBook, getBook, saveBook } from "@/lib/db";
+import { deleteBook, ensureShareCode, getBook, saveBook } from "@/lib/db";
 import { getOwnerIdFromRequest } from "@/lib/serverAuth";
 import { isThemeKey } from "@/lib/themes";
 import type { Book, BookCover, BookPage, MusicTrack, ThemeKey } from "@/lib/types";
@@ -30,6 +30,11 @@ export async function GET(
 ) {
   const result = await authorize(req, params.id);
   if (result instanceof NextResponse) return result;
+  // Backfill a share code for books created before this feature existed.
+  if (!result.cover.shareCode) {
+    await ensureShareCode(result);
+    await saveBook(result);
+  }
   return NextResponse.json({ book: result });
 }
 
@@ -56,8 +61,14 @@ export async function PUT(
       name: patch.cover.name ? String(patch.cover.name) : "",
       image: patch.cover.image ? String(patch.cover.image) : null,
       video: patch.cover.video ?? null,
+      endPage: patch.cover.endPage ?? null,
+      // Never let a client patch drop the stable share code.
+      shareCode: patch.cover.shareCode ?? book.cover.shareCode,
+      docType: patch.cover.docType ?? book.cover.docType,
+      certificate: patch.cover.certificate ?? book.cover.certificate ?? null,
     };
   }
+  await ensureShareCode(book);
   if (Array.isArray(patch.pages)) {
     book.pages = patch.pages;
   }

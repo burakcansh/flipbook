@@ -18,6 +18,11 @@ export function genSlug(): string {
   return randomString(8);
 }
 
+/** 5-digit numeric share code shown to readers, e.g. "48213". */
+export function genShareCode(): string {
+  return String(Math.floor(10000 + Math.random() * 90000));
+}
+
 /** Readable share password (no ambiguous chars), e.g. "k7m3x9". */
 export function genPassword(): string {
   const chars = "abcdefghjkmnpqrstuvwxyz23456789";

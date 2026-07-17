@@ -7,6 +7,10 @@ import ViewerGate from "@/components/ViewerGate";
 import type { PublicBook } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+// Never read a cached book here — a removed password / new page must show up
+// on the very next load, so the Supabase read must not hit Next's data cache.
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 export async function generateMetadata({
   params,
@@ -66,7 +70,7 @@ export default async function PublicBookPage({
     return (
       <ViewerGate
         slug={params.slug}
-        title={book.cover.title || "Adsız kitap"}
+        title={book.cover.name || book.cover.title || ""}
         themeKey={book.themeKey}
       />
     );

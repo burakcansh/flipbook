@@ -19,14 +19,22 @@ import { useAuth } from "@/lib/owner";
 import { getTheme } from "@/lib/themes";
 import { getTextBlocks } from "@/lib/textBlocks";
 import MusicEditor from "./MusicEditor";
+import PdfExportButton from "./PdfExportButton";
+import CertificateEditor from "./CertificateEditor";
+import { useT } from "@/lib/LangProvider";
+import type { Certificate } from "@/lib/types";
 import type { Book, BookPage, MusicTrack, TextBlock } from "@/lib/types";
 
-type Selected = "cover" | number;
+type Selected = "cover" | "end" | number;
+type PageRef = number | "end";
 type SaveState = "idle" | "saving" | "saved" | "error";
+
+const EMPTY_END_PAGE: BookPage = { id: "endpage", kind: "text", texts: [] };
 
 export default function Editor({ id }: { id: string }) {
   const router = useRouter();
   useAuth(true);
+  const t = useT();
   const [book, setBook] = useState<Book | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Selected>("cover");
@@ -49,7 +57,7 @@ export default function Editor({ id }: { id: string }) {
   useEffect(() => {
     getBook(id)
       .then((b) => setBook(b))
-      .catch((e) => setError(e.message || "Kitap yüklenemedi"));
+      .catch((e) => setError(e.message || t.ed.loadFailed));
   }, [id]);
 
   const doSave = useCallback(async () => {
@@ -84,19 +92,45 @@ export default function Editor({ id }: { id: string }) {
 
   const commitSave = useCallback(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    doSave();
+    return doSave();
   }, [doSave]);
+
+  // Open the live page, but flush pending edits first and bust the browser
+  // cache so the freshly-saved version is what actually loads.
+  async function viewLive() {
+    if (!book?.slug) return;
+    const w = window.open("about:blank", "_blank"); // opened on the user gesture
+    await commitSave();
+    const url = `/b/${book.slug}?v=${Date.now()}`;
+    if (w) w.location.href = url;
+    else window.open(url, "_blank", "noopener");
+  }
 
   // Flush pending save when leaving the page.
   useEffect(() => {
     return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      // Flush a pending debounced save on the way out so an edit made right
+      // before leaving (e.g. removing the password) isn't silently dropped.
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+        void doSave();
+      }
     };
-  }, []);
+  }, [doSave]);
 
   // ---- mutations (immediate local state → instant live preview) ----
   function patchCover(patch: Partial<Book["cover"]>) {
     setBook((b) => (b ? { ...b, cover: { ...b.cover, ...patch } } : b));
+    scheduleSave();
+  }
+
+  function patchCert(next: Certificate) {
+    const cur = bookRef.current;
+    if (!cur) return;
+    const nb = { ...cur, cover: { ...cur.cover, certificate: next } };
+    bookRef.current = nb; // keep ref fresh so an immediate save isn't stale
+    setBook(nb);
     scheduleSave();
   }
 
@@ -105,9 +139,16 @@ export default function Editor({ id }: { id: string }) {
     scheduleSave();
   }
 
-  function setViewPassword(pw: string | null) {
-    setBook((b) => (b ? { ...b, viewPassword: pw } : b));
-    scheduleSave();
+  function setViewPassword(pw: string | null, immediate = false) {
+    const cur = bookRef.current;
+    if (!cur) return;
+    const next = { ...cur, viewPassword: pw };
+    bookRef.current = next; // keep ref fresh so the save isn't stale
+    setBook(next);
+    // Toggling protection on/off should take effect right away, not after a
+    // debounce the user might interrupt by leaving the editor.
+    if (immediate) commitSave();
+    else scheduleSave();
   }
 
   async function handleCoverFile(file?: File | null) {
@@ -118,7 +159,7 @@ export default function Editor({ id }: { id: string }) {
       patchCover({ image: url });
       commitSave();
     } catch {
-      alert("Kapak görseli yüklenemedi.");
+      alert(t.ed.coverImageFailed);
     } finally {
       setCoverUploading(false);
     }
@@ -130,7 +171,7 @@ export default function Editor({ id }: { id: string }) {
       file.type.startsWith("video/") ||
       /\.(mp4|webm|mov|m4v|mkv|3gp|ogv|mpe?g)$/i.test(file.name);
     if (!looksVideo) {
-      alert("Lütfen bir video dosyası seç.");
+      alert(t.ed.pickVideo);
       return;
     }
     setCoverVideoUploading(true);
@@ -146,7 +187,7 @@ export default function Editor({ id }: { id: string }) {
       });
       commitSave();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Kapak videosu yüklenemedi.");
+      alert(e instanceof Error ? e.message : t.ed.coverVideoFailed);
     } finally {
       setCoverVideoUploading(false);
     }
@@ -157,7 +198,7 @@ export default function Editor({ id }: { id: string }) {
     if (!url) return;
     const meta = await fetchVideoMeta(url);
     if (!meta) {
-      alert("Bağlantı çözümlenemedi (YouTube/Vimeo linki?).");
+      alert(t.ed.linkFailed);
       return;
     }
     patchCover({ video: meta });
@@ -166,29 +207,33 @@ export default function Editor({ id }: { id: string }) {
   }
 
   /** Writes text blocks, clearing any legacy single-text fields. */
-  function setTextBlocks(index: number, blocks: TextBlock[]) {
+  function setTextBlocks(index: PageRef, blocks: TextBlock[]) {
     setBook((b) => {
       if (!b) return b;
-      const pages = b.pages.slice();
-      pages[index] = {
-        ...pages[index],
+      const apply = (p: BookPage): BookPage => ({
+        ...p,
         texts: blocks,
         heading: undefined,
         body: undefined,
         textX: undefined,
         textY: undefined,
-      };
+      });
+      if (index === "end") {
+        return {
+          ...b,
+          cover: { ...b.cover, endPage: apply(b.cover.endPage ?? EMPTY_END_PAGE) },
+        };
+      }
+      const pages = b.pages.slice();
+      pages[index] = apply(pages[index]);
       return { ...b, pages };
     });
     scheduleSave();
   }
 
-  function updateTextBlock(
-    index: number,
-    id: string,
-    patch: Partial<TextBlock>
-  ) {
-    const page = book?.pages[index];
+  function updateTextBlock(index: PageRef, id: string, patch: Partial<TextBlock>) {
+    const page =
+      index === "end" ? book?.cover.endPage ?? EMPTY_END_PAGE : book?.pages[index];
     if (!page) return;
     const blocks = getTextBlocks(page).map((t) =>
       t.id === id ? { ...t, ...patch } : t
@@ -196,9 +241,18 @@ export default function Editor({ id }: { id: string }) {
     setTextBlocks(index, blocks);
   }
 
-  function patchPage(index: number, patch: Partial<BookPage>) {
+  function patchPage(index: PageRef, patch: Partial<BookPage>) {
     setBook((b) => {
       if (!b) return b;
+      if (index === "end") {
+        return {
+          ...b,
+          cover: {
+            ...b.cover,
+            endPage: { ...(b.cover.endPage ?? EMPTY_END_PAGE), ...patch },
+          },
+        };
+      }
       const pages = b.pages.slice();
       pages[index] = { ...pages[index], ...patch };
 
@@ -224,42 +278,66 @@ export default function Editor({ id }: { id: string }) {
   }
 
   function addPage(kind: "text" | "video" | "image") {
-    setBook((b) => {
-      if (!b) return b;
-      const newPage: BookPage =
-        kind === "text"
-          ? { id: genId("p_"), kind: "text", heading: "", body: "" }
-          : kind === "image"
-          ? { id: genId("p_"), kind: "image", image: null, caption: "" }
-          : { id: genId("p_"), kind: "video", video: null, caption: "" };
-      const pages = [...b.pages, newPage];
-      setSelected(pages.length - 1);
-      return { ...b, pages };
-    });
+    const cur = bookRef.current;
+    if (!cur) return;
+    const newPage: BookPage =
+      kind === "text"
+        ? { id: genId("p_"), kind: "text", heading: "", body: "" }
+        : kind === "image"
+        ? { id: genId("p_"), kind: "image", image: null, caption: "" }
+        : { id: genId("p_"), kind: "video", video: null, caption: "" };
+    const next = { ...cur, pages: [...cur.pages, newPage] };
+    bookRef.current = next; // keep ref in lockstep so the save below isn't stale
+    setBook(next);
+    setSelected(next.pages.length - 1);
+    commitSave();
+  }
+
+  /**
+   * Import a multi-page PDF as page backgrounds: page 1 becomes `index`'s
+   * background, the remaining pages are inserted right after it.
+   */
+  function importPdf(index: number, urls: string[]) {
+    const cur = bookRef.current;
+    if (!cur || urls.length === 0) return;
+    const pages = cur.pages.slice();
+    pages[index] = { ...pages[index], bgImage: urls[0], bgColor: null };
+    const extra: BookPage[] = urls.slice(1).map((u) => ({
+      id: genId("p_"),
+      kind: "text",
+      texts: [],
+      bgImage: u,
+    }));
+    pages.splice(index + 1, 0, ...extra);
+    const next = { ...cur, pages };
+    bookRef.current = next;
+    setBook(next);
+    setSelected(index);
     commitSave();
   }
 
   function deletePage(index: number) {
-    setBook((b) => {
-      if (!b) return b;
-      const pages = b.pages.filter((_, i) => i !== index);
-      return { ...b, pages };
-    });
+    const cur = bookRef.current;
+    if (!cur) return;
+    const next = { ...cur, pages: cur.pages.filter((_, i) => i !== index) };
+    bookRef.current = next;
+    setBook(next);
     setSelected((s) =>
-      s === "cover" ? s : Math.max(0, Math.min((s as number) - 1, 9999))
+      typeof s === "number" ? Math.max(0, Math.min(s - 1, 9999)) : s
     );
     commitSave();
   }
 
   function movePage(index: number, dir: -1 | 1) {
-    setBook((b) => {
-      if (!b) return b;
-      const target = index + dir;
-      if (target < 0 || target >= b.pages.length) return b;
-      const pages = b.pages.slice();
-      [pages[index], pages[target]] = [pages[target], pages[index]];
-      return { ...b, pages };
-    });
+    const cur = bookRef.current;
+    if (!cur) return;
+    const target = index + dir;
+    if (target < 0 || target >= cur.pages.length) return;
+    const pages = cur.pages.slice();
+    [pages[index], pages[target]] = [pages[target], pages[index]];
+    const next = { ...cur, pages };
+    bookRef.current = next;
+    setBook(next);
     setSelected((s) => (typeof s === "number" ? s + dir : s));
     commitSave();
   }
@@ -275,7 +353,7 @@ export default function Editor({ id }: { id: string }) {
         b ? { ...b, status: updated.status, slug: updated.slug } : b
       );
     } catch {
-      alert("İşlem başarısız oldu.");
+      alert(t.ed.actionFailed);
     } finally {
       setPublishing(false);
     }
@@ -339,20 +417,73 @@ export default function Editor({ id }: { id: string }) {
   const previewContent: FaceContent =
     selected === "cover"
       ? { type: "cover", cover: book.cover }
+      : selected === "end"
+      ? {
+          type: "page",
+          page: book.cover.endPage ?? EMPTY_END_PAGE,
+          pageNumber: book.pages.length + 1,
+          isEnd: true,
+        }
       : {
           type: "page",
           page: book.pages[selected as number],
           pageNumber: (selected as number) + 1,
         };
 
+  // The page object the preview is currently editing (numbered page or end page).
+  const selRef: PageRef | null = selected === "cover" ? null : selected;
+  const selPageObj: BookPage | undefined =
+    selected === "cover"
+      ? undefined
+      : selected === "end"
+      ? book.cover.endPage ?? EMPTY_END_PAGE
+      : book.pages[selected];
+
   const saveLabel =
     saveState === "saving"
-      ? "Kaydediliyor…"
+      ? t.editor.saving
       : saveState === "saved"
-      ? "Kaydedildi ✓"
+      ? t.editor.saved
       : saveState === "error"
-      ? "Kaydedilemedi"
+      ? t.editor.saveFailed
       : "";
+
+  // ---- Certificate document → dedicated editor ----
+  if (book.cover.docType === "certificate") {
+    const cert: Certificate = book.cover.certificate ?? {
+      title: t.cert.defTitle,
+      subtitle: t.cert.defSubtitle,
+      body: "",
+      template: "classic",
+      accent: "#b8923f",
+      personnel: [],
+    };
+    return (
+      <div className="min-h-screen bg-[#efe6d2]">
+        <TopBar activeBookId={book.id} />
+        <div className="border-b border-amber-900/10 bg-[#f7f1e6]">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🎓</span>
+              <input
+                value={book.cover.name ?? ""}
+                onChange={(e) => patchCover({ name: e.target.value })}
+                onBlur={commitSave}
+                placeholder={t.cert.docName}
+                className="rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm font-medium text-amber-950 outline-none hover:border-amber-900/15 focus:border-amber-600"
+              />
+            </div>
+            <span className="text-xs text-amber-900/40">{saveLabel}</span>
+          </div>
+        </div>
+        <CertificateEditor
+          cert={cert}
+          onChange={patchCert}
+          onCommit={commitSave}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#efe6d2]">
@@ -363,7 +494,7 @@ export default function Editor({ id }: { id: string }) {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-amber-950">
-              {book.cover.name || book.cover.title || "Adsız kitap"}
+              {book.cover.name || book.cover.title || t.common.untitledBook}
             </span>
             <span
               className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
@@ -372,27 +503,26 @@ export default function Editor({ id }: { id: string }) {
                   : "bg-gray-100 text-gray-500"
               }`}
             >
-              {published ? "Yayında" : "Taslak"}
+              {published ? t.common.published : t.common.draft}
             </span>
             <span className="text-xs text-amber-900/40">{saveLabel}</span>
           </div>
 
           <div className="flex items-center gap-2">
+            <PdfExportButton book={book} theme={theme} />
             {published && book.slug && (
               <>
-                <a
-                  href={`/b/${book.slug}`}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  onClick={viewLive}
                   className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-white"
                 >
-                  Görüntüle
-                </a>
+                  {t.editor.view}
+                </button>
                 <button
                   onClick={copyLink}
                   className="rounded-lg border border-amber-700 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-50"
                 >
-                  {copied ? "Kopyalandı ✓" : "Linki kopyala"}
+                  {copied ? t.editor.copied : t.editor.copyLink}
                 </button>
               </>
             )}
@@ -406,18 +536,26 @@ export default function Editor({ id }: { id: string }) {
               }`}
             >
               {publishing
-                ? "…"
+                ? t.editor.working
                 : published
-                ? "Yayından kaldır"
-                : "Kaydet ve Link Üret"}
+                ? t.editor.unpublish
+                : t.editor.publish}
             </button>
           </div>
         </div>
         {published && book.slug && (
-          <div className="mx-auto max-w-6xl px-4 pb-3">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 pb-3">
             <code className="rounded bg-white px-2 py-1 text-xs text-amber-900/70">
               {shareUrl()}
             </code>
+            {book.cover.shareCode && (
+              <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900">
+                {t.editor.shareCode}
+                <code className="tracking-[0.2em] text-amber-950">
+                  {book.cover.shareCode}
+                </code>
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -435,11 +573,11 @@ export default function Editor({ id }: { id: string }) {
                   : "border-amber-900/15 bg-white text-gray-700 hover:bg-amber-50"
               }`}
             >
-              📕 Kapak
+              📕 {t.ed.cover}
             </button>
 
             <div className="mt-1 text-[11px] uppercase tracking-wider text-amber-900/40">
-              Sayfalar
+              {t.ed.pages}
             </div>
 
             {book.pages.map((p, i) => (
@@ -459,10 +597,10 @@ export default function Editor({ id }: { id: string }) {
                   <span className="truncate text-gray-700">
                     {getTextBlocks(p)[0]?.body?.slice(0, 20) ||
                       (p.image?.src
-                        ? "🖼️ Görsel"
+                        ? t.ed.imagePage
                         : p.video
-                        ? `🎬 ${p.video.title || "Video"}`
-                        : "Boş sayfa")}
+                        ? `🎬 ${p.video.title || t.ed.videoSection}`
+                        : "")}
                   </span>
                 </button>
                 <div className="flex flex-col">
@@ -470,7 +608,7 @@ export default function Editor({ id }: { id: string }) {
                     onClick={() => movePage(i, -1)}
                     disabled={i === 0}
                     className="text-[10px] leading-none text-gray-400 disabled:opacity-30"
-                    title="Yukarı"
+                    title={t.ed.up}
                   >
                     ▲
                   </button>
@@ -478,7 +616,7 @@ export default function Editor({ id }: { id: string }) {
                     onClick={() => movePage(i, 1)}
                     disabled={i === book.pages.length - 1}
                     className="text-[10px] leading-none text-gray-400 disabled:opacity-30"
-                    title="Aşağı"
+                    title={t.ed.down}
                   >
                     ▼
                   </button>
@@ -486,7 +624,7 @@ export default function Editor({ id }: { id: string }) {
                 <button
                   onClick={() => deletePage(i)}
                   className="ml-1 text-xs text-red-400 hover:text-red-600"
-                  title="Sil"
+                  title={t.ed.delete}
                 >
                   ✕
                 </button>
@@ -498,9 +636,20 @@ export default function Editor({ id }: { id: string }) {
                 onClick={() => addPage("text")}
                 className="w-full rounded-lg border border-dashed border-amber-700/50 px-2 py-2.5 text-sm font-medium text-amber-800 hover:bg-amber-50"
               >
-                ＋ Sayfa Ekle
+                {t.ed.addPage}
               </button>
             </div>
+
+            <button
+              onClick={() => setSelected("end")}
+              className={`mt-3 w-full rounded-lg border px-3 py-2 text-left text-sm font-medium ${
+                selected === "end"
+                  ? "border-amber-700 bg-amber-50 text-amber-950"
+                  : "border-amber-900/15 bg-white text-amber-900/80 hover:bg-amber-50"
+              }`}
+            >
+              {t.ed.endPage}
+            </button>
           </aside>
 
           {/* editor form */}
@@ -508,44 +657,44 @@ export default function Editor({ id }: { id: string }) {
             {selected === "cover" ? (
               <div className="flex flex-col gap-4">
                 <h2 className="text-lg font-semibold text-amber-950">
-                  Kapak
+                  {t.ed.cover}
                 </h2>
                 <div className="rounded-lg border border-amber-900/10 bg-amber-50/50 p-3">
                   <label className="mb-1 block text-xs font-medium text-amber-900/70">
-                    Kitap adı (yalnızca “Kitaplarım”da görünür)
+                    {t.ed.bookName}
                   </label>
                   <input
                     value={book.cover.name ?? ""}
                     onChange={(e) => patchCover({ name: e.target.value })}
                     onBlur={commitSave}
-                    placeholder="örn. Nextviro Tanıtım — Ağustos"
+                    placeholder={t.ed.bookNamePh}
                     className="w-full rounded-lg border border-amber-900/20 bg-white px-3 py-2 outline-none focus:border-amber-600"
                   />
                   <p className="mt-1 text-[11px] text-amber-900/50">
-                    Kapakta görünmez; kitaplarını kolay ayırt etmen için.
+                    {t.ed.bookNameHint}
                   </p>
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-amber-900/70">
-                    Başlık (kapakta görünür)
+                    {t.ed.titleLabel}
                   </label>
                   <input
                     value={book.cover.title}
                     onChange={(e) => patchCover({ title: e.target.value })}
                     onBlur={commitSave}
-                    placeholder="Kitap başlığı"
+                    placeholder={t.ed.titlePh}
                     className="w-full rounded-lg border border-amber-900/20 bg-white px-3 py-2 text-lg outline-none focus:border-amber-600"
                   />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-amber-900/70">
-                    Alt başlık
+                    {t.ed.subtitleLabel}
                   </label>
                   <input
                     value={book.cover.subtitle}
                     onChange={(e) => patchCover({ subtitle: e.target.value })}
                     onBlur={commitSave}
-                    placeholder="Alt başlık"
+                    placeholder={t.ed.subtitlePh}
                     className="w-full rounded-lg border border-amber-900/20 bg-white px-3 py-2 outline-none focus:border-amber-600"
                   />
                 </div>
@@ -553,7 +702,7 @@ export default function Editor({ id }: { id: string }) {
                 {/* cover image */}
                 <div>
                   <label className="mb-1 block text-xs font-medium text-amber-900/70">
-                    Kapak görseli
+                    {t.ed.coverImage}
                   </label>
                   <input
                     ref={coverInputRef}
@@ -580,7 +729,7 @@ export default function Editor({ id }: { id: string }) {
                           onClick={() => coverInputRef.current?.click()}
                           className="rounded-md border border-amber-700 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-50"
                         >
-                          {coverUploading ? "Yükleniyor…" : "Değiştir"}
+                          {coverUploading ? t.ed.uploading : t.ed.change}
                         </button>
                         <button
                           onClick={() => {
@@ -589,7 +738,7 @@ export default function Editor({ id }: { id: string }) {
                           }}
                           className="rounded-md border border-gray-300 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50"
                         >
-                          Kaldır
+                          {t.ed.remove}
                         </button>
                       </div>
                     </div>
@@ -605,12 +754,10 @@ export default function Editor({ id }: { id: string }) {
                     >
                       <span className="text-xl">🖼️</span>
                       <span className="mt-1 text-sm font-medium text-amber-900">
-                        {coverUploading
-                          ? "Yükleniyor…"
-                          : "Kapak görseli ekle (sürükle ya da seç)"}
+                        {coverUploading ? t.ed.uploading : t.ed.coverImageAdd}
                       </span>
                       <span className="text-xs text-amber-900/50">
-                        Dergi tarzı tam kapama kapak için
+                        {t.ed.coverImageHint}
                       </span>
                     </div>
                   )}
@@ -619,7 +766,7 @@ export default function Editor({ id }: { id: string }) {
                 {/* cover video (autoplay, silent, loop) */}
                 <div>
                   <label className="mb-1 block text-xs font-medium text-amber-900/70">
-                    Kapak videosu (otomatik, sessiz döngü)
+                    {t.ed.coverVideo}
                   </label>
                   <input
                     ref={coverVideoInputRef}
@@ -648,7 +795,7 @@ export default function Editor({ id }: { id: string }) {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm text-gray-700">
-                          {book.cover.video.title || "Video"}
+                          {book.cover.video.title || t.ed.videoSection}
                         </div>
                         <button
                           onClick={() => {
@@ -657,7 +804,7 @@ export default function Editor({ id }: { id: string }) {
                           }}
                           className="text-xs text-red-500 hover:text-red-600"
                         >
-                          Kaldır
+                          {t.ed.remove}
                         </button>
                       </div>
                     </div>
@@ -668,8 +815,8 @@ export default function Editor({ id }: { id: string }) {
                         className="rounded-lg border border-dashed border-amber-700/50 px-3 py-2 text-xs font-medium text-amber-800 hover:bg-amber-50"
                       >
                         {coverVideoUploading
-                          ? "Yükleniyor…"
-                          : "🎬 Cihazdan video yükle"}
+                          ? t.ed.uploading
+                          : t.ed.coverVideoUpload}
                       </button>
                       <div className="flex gap-2">
                         <input
@@ -678,7 +825,7 @@ export default function Editor({ id }: { id: string }) {
                           onKeyDown={(e) => {
                             if (e.key === "Enter") loadCoverVideoLink();
                           }}
-                          placeholder="YouTube / Vimeo linki"
+                          placeholder={t.ed.videoLinkPh}
                           className="min-w-0 flex-1 rounded-lg border border-amber-900/20 bg-white px-3 py-2 text-sm outline-none focus:border-amber-600"
                         />
                         <button
@@ -686,19 +833,18 @@ export default function Editor({ id }: { id: string }) {
                           disabled={!coverVideoUrl.trim()}
                           className="shrink-0 rounded-lg bg-amber-700 px-3 py-2 text-xs font-medium text-white hover:bg-amber-800 disabled:opacity-50"
                         >
-                          Getir
+                          {t.ed.fetch}
                         </button>
                       </div>
                     </div>
                   )}
                   <p className="mt-1 text-[11px] text-amber-900/50">
-                    Video, kapağın tam kapama arka planı olur ve sessizce döngüde
-                    oynar.
+                    {t.ed.coverVideoHint}
                   </p>
                 </div>
 
                 <p className="text-xs text-amber-900/50">
-                  Tema: <strong>{theme.name}</strong>
+                  {t.ed.theme}: <strong>{theme.name}</strong>
                 </p>
 
                 <MusicEditor
@@ -714,17 +860,15 @@ export default function Editor({ id }: { id: string }) {
                       type="checkbox"
                       checked={book.viewPassword != null}
                       onChange={(e) => {
-                        if (e.target.checked) {
-                          setViewPassword(genPassword());
-                        } else {
-                          setViewPassword(null);
-                        }
-                        commitSave();
+                        setViewPassword(
+                          e.target.checked ? genPassword() : null,
+                          true
+                        );
                       }}
                       className="h-4 w-4 accent-amber-700"
                     />
                     <span className="text-sm font-semibold text-amber-950">
-                      🔒 Şifre ile koru
+                      {t.ed.protect}
                     </span>
                   </label>
 
@@ -735,37 +879,47 @@ export default function Editor({ id }: { id: string }) {
                           value={book.viewPassword}
                           onChange={(e) => setViewPassword(e.target.value)}
                           onBlur={commitSave}
-                          placeholder="Şifre"
+                          placeholder={t.ed.passwordPh}
                           className="min-w-0 flex-1 rounded-lg border border-amber-900/20 bg-white px-3 py-2 font-mono text-sm outline-none focus:border-amber-600"
                         />
                         <button
-                          onClick={() => {
-                            setViewPassword(genPassword());
-                            commitSave();
-                          }}
+                          onClick={() => setViewPassword(genPassword(), true)}
                           className="shrink-0 rounded-lg border border-amber-700 px-3 py-2 text-xs font-medium text-amber-800 hover:bg-amber-50"
                         >
-                          Rastgele
+                          {t.ed.random}
                         </button>
                       </div>
                       <p className="mt-2 text-xs text-amber-900/55">
-                        Linki açan kişi bu şifreyi girmeden kitabı göremez. Şifreyi
-                        paylaşmayı unutma.
+                        {t.ed.protectHint}
                       </p>
                     </div>
                   )}
                 </div>
               </div>
+            ) : selected === "end" ? (
+              <div className="flex flex-col gap-4">
+                <h2 className="text-lg font-semibold text-amber-950">
+                  {t.ed.endPageTitle}
+                </h2>
+                <p className="text-xs text-amber-900/55">{t.ed.endPageHint}</p>
+                <PageEditor
+                  key="endpage"
+                  page={book.cover.endPage ?? EMPTY_END_PAGE}
+                  onChange={(patch) => patchPage("end", patch)}
+                  onCommit={commitSave}
+                />
+              </div>
             ) : (
               <div className="flex flex-col gap-4">
                 <h2 className="text-lg font-semibold text-amber-950">
-                  Sayfa {(selected as number) + 1}
+                  {t.ed.page} {(selected as number) + 1}
                 </h2>
                 <PageEditor
                   key={book.pages[selected as number].id}
                   page={book.pages[selected as number]}
                   onChange={(patch) => patchPage(selected as number, patch)}
                   onCommit={commitSave}
+                  onImportPdf={(urls) => importPdf(selected as number, urls)}
                 />
               </div>
             )}
@@ -776,50 +930,51 @@ export default function Editor({ id }: { id: string }) {
             <LivePreview
               content={previewContent}
               theme={theme}
-              label="Canlı önizleme"
+              label={t.ed.livePreview}
               editable={selected !== "cover"}
               onImageMove={(x, y) => {
-                const i = selected as number;
-                const cur = book.pages[i]?.image;
-                if (cur) patchPage(i, { image: { ...cur, x, y } });
+                const cur = selPageObj?.image;
+                if (cur && selRef !== null)
+                  patchPage(selRef, { image: { ...cur, x, y } });
               }}
               onImageResize={(size) => {
-                const i = selected as number;
-                const cur = book.pages[i]?.image;
-                if (cur) patchPage(i, { image: { ...cur, scale: size / 100 } });
+                const cur = selPageObj?.image;
+                if (cur && selRef !== null)
+                  patchPage(selRef, { image: { ...cur, scale: size / 100 } });
               }}
               onTextMove={(id, x, y) =>
-                updateTextBlock(selected as number, id, { x, y })
+                selRef !== null && updateTextBlock(selRef, id, { x, y })
               }
               onTextResize={(id, w) =>
-                updateTextBlock(selected as number, id, { w })
+                selRef !== null && updateTextBlock(selRef, id, { w })
               }
               onCaptionMove={(x, y) =>
-                patchPage(selected as number, { captionX: x, captionY: y })
+                selRef !== null &&
+                patchPage(selRef, { captionX: x, captionY: y })
               }
               onVideoMove={(x, y) => {
-                const i = selected as number;
-                const cur = book.pages[i]?.video;
-                if (cur) patchPage(i, { video: { ...cur, x, y } });
+                const cur = selPageObj?.video;
+                if (cur && selRef !== null)
+                  patchPage(selRef, { video: { ...cur, x, y } });
               }}
               onVideoResize={(size) => {
-                const i = selected as number;
-                const cur = book.pages[i]?.video;
-                if (cur) patchPage(i, { video: { ...cur, scale: size / 100 } });
+                const cur = selPageObj?.video;
+                if (cur && selRef !== null)
+                  patchPage(selRef, { video: { ...cur, scale: size / 100 } });
               }}
               onLinkMove={(id, x, y) => {
-                const i = selected as number;
-                const links = (book.pages[i]?.links ?? []).map((l) =>
+                if (selRef === null) return;
+                const links = (selPageObj?.links ?? []).map((l) =>
                   l.id === id ? { ...l, x, y } : l
                 );
-                patchPage(i, { links });
+                patchPage(selRef, { links });
               }}
               onLinkResize={(id, size) => {
-                const i = selected as number;
-                const links = (book.pages[i]?.links ?? []).map((l) =>
+                if (selRef === null) return;
+                const links = (selPageObj?.links ?? []).map((l) =>
                   l.id === id ? { ...l, size } : l
                 );
-                patchPage(i, { links });
+                patchPage(selRef, { links });
               }}
               onCommit={commitSave}
             />
