@@ -7,7 +7,7 @@ import { deleteBook, listMyBooks } from "@/lib/api";
 import { useAuth } from "@/lib/owner";
 import { getTheme } from "@/lib/themes";
 import { useT } from "@/lib/LangProvider";
-import type { BookSummary } from "@/lib/types";
+import type { BookSummary, DocType } from "@/lib/types";
 
 export default function DashboardPage() {
   const { user } = useAuth(true);
@@ -26,8 +26,16 @@ export default function DashboardPage() {
     setBooks((b) => (b ? b.filter((x) => x.id !== id) : b));
   }
 
+  function typeMeta(dt: DocType) {
+    if (dt === "site") return { icon: "🌐", label: t.common.typeSite };
+    if (dt === "certificate")
+      return { icon: "🎓", label: t.common.typeCertificate };
+    return { icon: "📖", label: t.common.typeBook };
+  }
+
   function renderCard(b: BookSummary) {
     const theme = getTheme(b.themeKey);
+    const type = typeMeta(b.docType);
     return (
       <div
         key={b.id}
@@ -59,7 +67,10 @@ export default function DashboardPage() {
             >
               {b.status === "published" ? t.common.published : t.common.draft}
             </span>
-            <span className="text-[11px] text-gray-400">{theme.name}</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/70 px-2 py-0.5 text-[11px] font-medium text-amber-900">
+              <span aria-hidden>{type.icon}</span>
+              {type.label}
+            </span>
           </div>
           <div className="mt-auto flex items-center gap-2">
             <Link

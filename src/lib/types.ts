@@ -197,6 +197,8 @@ export interface BookSummary {
   status: BookStatus;
   slug: string | null;
   updatedAt: number;
+  /** document kind — book / certificate / site */
+  docType: DocType;
 }
 
 /** A book as shown on the public bookshelf. */

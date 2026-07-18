@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
     status: b.status,
     slug: b.slug,
     updatedAt: b.updatedAt,
+    docType: b.cover.docType ?? "book",
   }));
   return NextResponse.json({ books: summaries });
 }

@@ -23,6 +23,9 @@ const tr = {
     edit: "Düzenle",
     open: "Aç",
     cancel: "Vazgeç",
+    typeBook: "Kitap",
+    typeCertificate: "Sertifika",
+    typeSite: "HTML",
   },
   auth: {
     tagline:
@@ -285,6 +288,9 @@ const en: typeof tr = {
     edit: "Edit",
     open: "Open",
     cancel: "Cancel",
+    typeBook: "Book",
+    typeCertificate: "Certificate",
+    typeSite: "HTML",
   },
   auth: {
     tagline:
