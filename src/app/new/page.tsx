@@ -20,7 +20,7 @@ export default function NewBookPage() {
   async function create(opts: {
     themeKey?: ThemeKey;
     templateKey?: string;
-    docType?: "book" | "certificate";
+    docType?: "book" | "certificate" | "site";
   }) {
     if (creating) return;
     setCreating(opts.docType ?? opts.templateKey ?? opts.themeKey ?? "x");
@@ -40,7 +40,7 @@ export default function NewBookPage() {
         {/* ---- What do you want to create? ---- */}
         <h1 className="text-2xl font-bold text-amber-950">{t.create.heading}</h1>
         <p className="mb-5 text-sm text-amber-900/60">{t.create.sub}</p>
-        <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="flex flex-col justify-between rounded-2xl border border-amber-900/15 bg-white p-5 shadow-sm">
             <div>
               <div className="text-3xl">📖</div>
@@ -70,6 +70,24 @@ export default function NewBookPage() {
               {creating === "certificate"
                 ? t.create.creating
                 : t.create.certCreate}
+            </span>
+          </button>
+          <button
+            onClick={() => create({ docType: "site" })}
+            disabled={!!creating}
+            className="group flex flex-col justify-between rounded-2xl border border-amber-700/40 bg-gradient-to-br from-sky-50 to-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-60"
+          >
+            <div>
+              <div className="text-3xl">🌐</div>
+              <div className="mt-2 text-lg font-semibold text-amber-950">
+                {t.create.siteTitle}
+              </div>
+              <p className="mt-1 text-sm text-amber-900/60">
+                {t.create.siteDesc}
+              </p>
+            </div>
+            <span className="mt-3 inline-block text-sm font-medium text-sky-700">
+              {creating === "site" ? t.create.creating : t.create.siteCreate}
             </span>
           </button>
         </div>

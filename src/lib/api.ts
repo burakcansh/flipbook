@@ -39,7 +39,7 @@ export async function createBook(
   opts: {
     themeKey?: ThemeKey;
     templateKey?: string;
-    docType?: "book" | "certificate";
+    docType?: "book" | "certificate" | "site";
     locale?: "tr" | "en";
   } = {}
 ): Promise<Book> {

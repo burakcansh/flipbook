@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ViewerScreen from "./ViewerScreen";
+import SiteViewer from "./SiteViewer";
 import { getTheme } from "@/lib/themes";
 import { useT } from "@/lib/LangProvider";
 import type { PublicBook, ThemeKey } from "@/lib/types";
@@ -47,7 +48,11 @@ export default function ViewerGate({
     }
   }
 
-  if (book) return <ViewerScreen book={book} />;
+  if (book) {
+    if (book.cover.docType === "site")
+      return <SiteViewer html={book.cover.site?.html ?? ""} />;
+    return <ViewerScreen book={book} />;
+  }
 
   return (
     <main

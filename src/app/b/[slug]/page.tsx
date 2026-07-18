@@ -4,6 +4,7 @@ import { getBookBySlug } from "@/lib/db";
 import { getTheme } from "@/lib/themes";
 import ViewerScreen from "@/components/ViewerScreen";
 import ViewerGate from "@/components/ViewerGate";
+import SiteViewer from "@/components/SiteViewer";
 import type { PublicBook } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -74,6 +75,11 @@ export default async function PublicBookPage({
         themeKey={book.themeKey}
       />
     );
+  }
+
+  // Hosted HTML site → render the uploaded document full-screen.
+  if (book.cover.docType === "site") {
+    return <SiteViewer html={book.cover.site?.html ?? ""} />;
   }
 
   const { ownerId, viewPassword, ...rest } = book;

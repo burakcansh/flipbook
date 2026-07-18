@@ -21,8 +21,9 @@ import { getTextBlocks } from "@/lib/textBlocks";
 import MusicEditor from "./MusicEditor";
 import PdfExportButton from "./PdfExportButton";
 import CertificateEditor from "./CertificateEditor";
+import SiteEditor from "./SiteEditor";
 import { useT } from "@/lib/LangProvider";
-import type { Certificate } from "@/lib/types";
+import type { Certificate, SiteDoc } from "@/lib/types";
 import type { Book, BookPage, MusicTrack, TextBlock } from "@/lib/types";
 
 type Selected = "cover" | "end" | number;
@@ -130,6 +131,15 @@ export default function Editor({ id }: { id: string }) {
     if (!cur) return;
     const nb = { ...cur, cover: { ...cur.cover, certificate: next } };
     bookRef.current = nb; // keep ref fresh so an immediate save isn't stale
+    setBook(nb);
+    scheduleSave();
+  }
+
+  function patchSite(next: SiteDoc) {
+    const cur = bookRef.current;
+    if (!cur) return;
+    const nb = { ...cur, cover: { ...cur.cover, site: next } };
+    bookRef.current = nb; // keep ref fresh so the immediate commit isn't stale
     setBook(nb);
     scheduleSave();
   }
@@ -493,6 +503,96 @@ export default function Editor({ id }: { id: string }) {
           cert={cert}
           onChange={patchCert}
           onCommit={commitSave}
+        />
+      </div>
+    );
+  }
+
+  // ---- Hosted HTML site → dedicated editor ----
+  if (book.cover.docType === "site") {
+    const siteDoc = book.cover.site ?? { html: "", fileName: "" };
+    return (
+      <div className="min-h-screen bg-[#efe6d2]">
+        <TopBar activeBookId={book.id} />
+        <div className="border-b border-amber-900/10 bg-[#f7f1e6]">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🌐</span>
+              <input
+                value={book.cover.name ?? ""}
+                onChange={(e) => patchCover({ name: e.target.value })}
+                onBlur={commitSave}
+                placeholder={t.site.docName}
+                className="rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm font-medium text-amber-950 outline-none hover:border-amber-900/15 focus:border-amber-600"
+              />
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                  published
+                    ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                {published ? t.common.published : t.common.draft}
+              </span>
+              <span className="text-xs text-amber-900/40">{saveLabel}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {published && book.slug && (
+                <>
+                  <button
+                    onClick={viewLive}
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-white"
+                  >
+                    {t.editor.view}
+                  </button>
+                  <button
+                    onClick={copyLink}
+                    className="rounded-lg border border-amber-700 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-50"
+                  >
+                    {copied ? t.editor.copied : t.editor.copyLink}
+                  </button>
+                </>
+              )}
+              <button
+                onClick={togglePublish}
+                disabled={publishing}
+                className={`rounded-lg px-4 py-1.5 text-sm font-medium text-white shadow disabled:opacity-50 ${
+                  published
+                    ? "bg-gray-600 hover:bg-gray-700"
+                    : "bg-amber-700 hover:bg-amber-800"
+                }`}
+              >
+                {publishing
+                  ? t.editor.working
+                  : published
+                  ? t.editor.unpublish
+                  : t.editor.publish}
+              </button>
+            </div>
+          </div>
+          {published && book.slug && (
+            <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 pb-3">
+              <code className="rounded bg-white px-2 py-1 text-xs text-amber-900/70">
+                {shareUrl()}
+              </code>
+              {book.cover.shareCode && (
+                <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900">
+                  {t.editor.shareCode}
+                  <code className="tracking-[0.2em] text-amber-950">
+                    {book.cover.shareCode}
+                  </code>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        <SiteEditor
+          site={siteDoc}
+          onChange={patchSite}
+          onCommit={commitSave}
+          viewPassword={book.viewPassword ?? null}
+          onSetPassword={setViewPassword}
+          genPassword={genPassword}
         />
       </div>
     );

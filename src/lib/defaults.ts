@@ -7,6 +7,28 @@ import type {
   ThemeKey,
 } from "./types";
 
+export function createDefaultSite(ownerId: string, locale: Locale = "tr"): Book {
+  const now = Date.now();
+  const name = locale === "en" ? "Web Page" : "Web Sayfası";
+  return {
+    id: genId("b_"),
+    ownerId,
+    themeKey: "corporate",
+    cover: {
+      title: name,
+      subtitle: "",
+      name,
+      docType: "site",
+      site: { html: "", fileName: "" },
+    },
+    pages: [],
+    status: "draft",
+    slug: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 export function blankPersonnel(locale: Locale = "tr"): CertificatePersonnel {
   return {
     id: genId("prs_"),

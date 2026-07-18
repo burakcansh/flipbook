@@ -115,13 +115,23 @@ export interface BookCover {
   endPage?: BookPage | null;
   /** 5-digit numeric code readers can type to open this book */
   shareCode?: string;
-  /** which kind of document this is — a flipbook or a training certificate */
+  /** which kind of document this is — a flipbook, certificate, or hosted site */
   docType?: DocType;
   /** certificate config + personnel records (when docType === "certificate") */
   certificate?: Certificate | null;
+  /** raw uploaded HTML document (when docType === "site") */
+  site?: SiteDoc | null;
 }
 
-export type DocType = "book" | "certificate";
+export type DocType = "book" | "certificate" | "site";
+
+/** A user-uploaded HTML page hosted as a standalone responsive site. */
+export interface SiteDoc {
+  /** full HTML document as uploaded */
+  html: string;
+  /** original uploaded file name, for display */
+  fileName?: string;
+}
 
 /** One person the certificate is issued to. */
 export interface CertificatePersonnel {

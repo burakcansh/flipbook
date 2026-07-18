@@ -66,6 +66,7 @@ export async function PUT(
       shareCode: patch.cover.shareCode ?? book.cover.shareCode,
       docType: patch.cover.docType ?? book.cover.docType,
       certificate: patch.cover.certificate ?? book.cover.certificate ?? null,
+      site: patch.cover.site ?? book.cover.site ?? null,
     };
   }
   await ensureShareCode(book);

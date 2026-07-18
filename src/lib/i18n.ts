@@ -92,6 +92,10 @@ const tr = {
     certDesc:
       "Personel bilgilerini gir, birçok kişi için tek tasarımdan sertifika üret; yatay PDF olarak indir.",
     certCreate: "Sertifika oluştur →",
+    siteTitle: "Web Sayfası (HTML)",
+    siteDesc:
+      "Hazır bir HTML dosyası yükle; olduğu gibi canlı, mobil uyumlu bir sayfa olarak yayınla. Link + kod + şifre.",
+    siteCreate: "Web sayfası oluştur →",
     creating: "Oluşturuluyor…",
     failed: "Oluşturulamadı, tekrar dene.",
   },
@@ -251,6 +255,21 @@ const tr = {
     pause: "Durdur",
     nextTrack: "Sonraki parça",
   },
+  site: {
+    docName: "Sayfa adı",
+    htmlFile: "HTML dosyası",
+    notHtml: "Lütfen bir .html dosyası seç.",
+    tooLarge: "Dosya çok büyük (en fazla 5 MB).",
+    readFailed: "Dosya okunamadı.",
+    replace: "Dosyayı değiştir",
+    drop: "HTML dosyanı buraya sürükle ya da seç",
+    dropHint: ".html / .htm — tek dosya, kendi içinde",
+    hint: "Dosyanı yükle, sonra üstteki “Kaydet ve Link Üret” ile canlıya al. Link + 5 haneli kod oluşur.",
+    preview: "Önizleme",
+    desktop: "Masaüstü",
+    mobile: "Mobil",
+    noFile: "Önizleme için bir HTML dosyası yükle.",
+  },
 };
 
 const en: typeof tr = {
@@ -333,6 +352,10 @@ const en: typeof tr = {
     certDesc:
       "Enter staff details and generate certificates for many people from one design; download as landscape PDF.",
     certCreate: "Create certificate →",
+    siteTitle: "Web Page (HTML)",
+    siteDesc:
+      "Upload a ready HTML file; publish it as-is as a live, mobile-friendly page. Link + code + password.",
+    siteCreate: "Create web page →",
     creating: "Creating…",
     failed: "Couldn't create it, try again.",
   },
@@ -490,6 +513,21 @@ const en: typeof tr = {
     play: "Play",
     pause: "Pause",
     nextTrack: "Next track",
+  },
+  site: {
+    docName: "Page name",
+    htmlFile: "HTML file",
+    notHtml: "Please pick an .html file.",
+    tooLarge: "File is too large (max 5 MB).",
+    readFailed: "Couldn't read the file.",
+    replace: "Replace file",
+    drop: "Drag your HTML file here or pick one",
+    dropHint: ".html / .htm — a single, self-contained file",
+    hint: "Upload your file, then use “Save & Get Link” above to publish. You'll get a link + a 5-digit code.",
+    preview: "Preview",
+    desktop: "Desktop",
+    mobile: "Mobile",
+    noFile: "Upload an HTML file to preview it.",
   },
 };
 
