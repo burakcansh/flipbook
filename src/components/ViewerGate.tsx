@@ -50,7 +50,7 @@ export default function ViewerGate({
 
   if (book) {
     if (book.cover.docType === "site")
-      return <SiteViewer html={book.cover.site?.html ?? ""} />;
+      return <SiteViewer src={`/b/${slug}/raw`} />;
     return <ViewerScreen book={book} />;
   }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getBookBySlug } from "@/lib/db";
 import type { Book, PublicBook } from "@/lib/types";
+import { siteUnlockCookie, siteUnlockToken } from "@/lib/serverAuth";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
@@ -66,5 +67,16 @@ export async function POST(
   if ((body.password ?? "") !== book.viewPassword) {
     return fresh(NextResponse.json({ error: "Şifre hatalı" }, { status: 401 }));
   }
-  return fresh(NextResponse.json({ book: toPublic(book) }));
+  const res = fresh(NextResponse.json({ book: toPublic(book) }));
+  // For hosted sites, mark this slug as unlocked so /b/[slug]/raw will serve
+  // the document to this viewer.
+  if (book.cover.docType === "site") {
+    res.cookies.set(siteUnlockCookie(params.slug), siteUnlockToken(params.slug), {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 12,
+    });
+  }
+  return res;
 }

@@ -77,9 +77,10 @@ export default async function PublicBookPage({
     );
   }
 
-  // Hosted HTML site → render the uploaded document full-screen.
+  // Hosted HTML site → render the uploaded document full-screen from its own
+  // route (real URL so in-page links work).
   if (book.cover.docType === "site") {
-    return <SiteViewer html={book.cover.site?.html ?? ""} />;
+    return <SiteViewer src={`/b/${params.slug}/raw`} />;
   }
 
   const { ownerId, viewPassword, ...rest } = book;

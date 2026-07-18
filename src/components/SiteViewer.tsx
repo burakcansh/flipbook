@@ -1,16 +1,17 @@
 "use client";
 
 /**
- * Renders an admin-uploaded HTML document full-screen inside a sandboxed
- * iframe. `srcDoc` + a sandbox without `allow-same-origin` keeps the uploaded
- * page isolated from the app's origin (it can't read our cookies/storage) and
- * stops its CSS from leaking into the app.
+ * Renders an admin-uploaded HTML document full-screen. The HTML is served as a
+ * real document from `/b/[slug]/raw` (not srcDoc) so its in-page anchors,
+ * mailto and relative links resolve against a real URL and work. The route
+ * also ships a CSP `sandbox` header, so the page runs in an opaque origin and
+ * cannot read this app's cookies/storage.
  */
-export default function SiteViewer({ html }: { html: string }) {
+export default function SiteViewer({ src }: { src: string }) {
   return (
     <iframe
       title="site"
-      srcDoc={html}
+      src={src}
       sandbox="allow-scripts allow-popups allow-forms allow-modals allow-presentation allow-popups-to-escape-sandbox"
       style={{
         position: "fixed",
