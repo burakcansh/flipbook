@@ -22,6 +22,20 @@ export async function generateMetadata({
   if (!book) {
     return { title: "Kitap bulunamadı — Flipbook" };
   }
+
+  // Hosted site → show the admin-chosen name as the page/share title.
+  if (book.cover.docType === "site") {
+    const siteName =
+      book.cover.name || book.cover.title || "Web";
+    const desc = book.cover.subtitle || undefined;
+    return {
+      title: siteName,
+      description: desc,
+      openGraph: { title: siteName, ...(desc ? { description: desc } : {}) },
+      twitter: { title: siteName, ...(desc ? { description: desc } : {}) },
+    };
+  }
+
   const title = book.cover.title || "Adsız kitap";
 
   // Locked books must not leak content into OG/metadata.

@@ -8,16 +8,16 @@ import type {
 } from "./types";
 
 export function createDefaultSite(ownerId: string, locale: Locale = "tr"): Book {
+  void locale;
   const now = Date.now();
-  const name = locale === "en" ? "Web Page" : "Web Sayfası";
   return {
     id: genId("b_"),
     ownerId,
     themeKey: "corporate",
     cover: {
-      title: name,
+      title: "",
       subtitle: "",
-      name,
+      name: "",
       docType: "site",
       site: { html: "", fileName: "" },
     },

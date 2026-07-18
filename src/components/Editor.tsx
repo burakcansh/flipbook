@@ -520,10 +520,12 @@ export default function Editor({ id }: { id: string }) {
               <span className="text-lg">🌐</span>
               <input
                 value={book.cover.name ?? ""}
-                onChange={(e) => patchCover({ name: e.target.value })}
+                onChange={(e) =>
+                  patchCover({ name: e.target.value, title: e.target.value })
+                }
                 onBlur={commitSave}
                 placeholder={t.site.docName}
-                className="rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm font-medium text-amber-950 outline-none hover:border-amber-900/15 focus:border-amber-600"
+                className="min-w-[12rem] rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm font-medium text-amber-950 outline-none hover:border-amber-900/15 focus:border-amber-600"
               />
               <span
                 className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
