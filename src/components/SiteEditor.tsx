@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { SiteDoc } from "@/lib/types";
+import type { MusicTrack, SiteDoc } from "@/lib/types";
 import { useT } from "@/lib/LangProvider";
+import MusicEditor from "./MusicEditor";
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -13,6 +14,8 @@ export default function SiteEditor({
   viewPassword,
   onSetPassword,
   genPassword,
+  music,
+  onMusicChange,
 }: {
   site: SiteDoc;
   onChange: (next: SiteDoc) => void;
@@ -20,6 +23,8 @@ export default function SiteEditor({
   viewPassword: string | null;
   onSetPassword: (value: string | null, commit?: boolean) => void;
   genPassword: () => string;
+  music: MusicTrack[];
+  onMusicChange: (music: MusicTrack[]) => void;
 }) {
   const t = useT();
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
@@ -143,6 +148,15 @@ export default function SiteEditor({
                 </p>
               </div>
             )}
+          </div>
+
+          {/* background music */}
+          <div className="rounded-2xl border border-amber-900/15 bg-white p-4 shadow-sm">
+            <MusicEditor
+              music={music}
+              onChange={onMusicChange}
+              onCommit={onCommit}
+            />
           </div>
         </aside>
 

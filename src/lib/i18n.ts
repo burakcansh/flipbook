@@ -60,6 +60,8 @@ const tr = {
     empty: "Henüz bir kitabın yok.",
     createFirst: "İlk kitabını oluştur",
     confirmDelete: "Bu kitabı silmek istediğine emin misin?",
+    publishedSection: "Yayında",
+    draftSection: "Taslaklar",
   },
   topbar: {
     myBooks: "Kitaplarım",
@@ -320,6 +322,8 @@ const en: typeof tr = {
     empty: "You don't have any books yet.",
     createFirst: "Create your first book",
     confirmDelete: "Are you sure you want to delete this book?",
+    publishedSection: "Published",
+    draftSection: "Drafts",
   },
   topbar: {
     myBooks: "My Books",

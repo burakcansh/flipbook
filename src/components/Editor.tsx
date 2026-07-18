@@ -595,6 +595,8 @@ export default function Editor({ id }: { id: string }) {
           viewPassword={book.viewPassword ?? null}
           onSetPassword={setViewPassword}
           genPassword={genPassword}
+          music={book.music ?? []}
+          onMusicChange={patchMusic}
         />
       </div>
     );

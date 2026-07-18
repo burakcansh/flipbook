@@ -26,6 +26,69 @@ export default function DashboardPage() {
     setBooks((b) => (b ? b.filter((x) => x.id !== id) : b));
   }
 
+  function renderCard(b: BookSummary) {
+    const theme = getTheme(b.themeKey);
+    return (
+      <div
+        key={b.id}
+        className="group flex flex-col overflow-hidden rounded-xl border border-amber-900/15 bg-white shadow-sm transition hover:shadow-md"
+      >
+        <Link
+          href={`/editor/${b.id}`}
+          className="flex h-28 items-center justify-center px-4 text-center"
+          style={{
+            background: theme.colors.cover,
+            color: theme.colors.coverText,
+          }}
+        >
+          <span
+            className="line-clamp-3 text-sm font-semibold"
+            style={{ fontFamily: theme.fonts.display }}
+          >
+            {b.name || b.title || t.common.untitledBook}
+          </span>
+        </Link>
+        <div className="flex flex-1 flex-col gap-2 p-3">
+          <div className="flex items-center justify-between">
+            <span
+              className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                b.status === "published"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              {b.status === "published" ? t.common.published : t.common.draft}
+            </span>
+            <span className="text-[11px] text-gray-400">{theme.name}</span>
+          </div>
+          <div className="mt-auto flex items-center gap-2">
+            <Link
+              href={`/editor/${b.id}`}
+              className="flex-1 rounded-md border border-amber-700 px-2 py-1.5 text-center text-xs font-medium text-amber-800 hover:bg-amber-50"
+            >
+              {t.common.edit}
+            </Link>
+            {b.status === "published" && b.slug && (
+              <Link
+                href={`/b/${b.slug}`}
+                target="_blank"
+                className="rounded-md border border-gray-300 px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+              >
+                {t.common.open}
+              </Link>
+            )}
+            <button
+              onClick={() => onDelete(b.id)}
+              className="rounded-md border border-gray-300 px-2 py-1.5 text-xs text-red-500 hover:bg-red-50"
+            >
+              {t.common.delete}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#efe6d2]">
       <TopBar />
@@ -67,71 +130,41 @@ export default function DashboardPage() {
         )}
 
         {books && books.length > 0 && (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {books.map((b) => {
-              const theme = getTheme(b.themeKey);
+          <div className="flex flex-col gap-8">
+            {(
+              [
+                { key: "published", label: t.dashboard.publishedSection },
+                { key: "draft", label: t.dashboard.draftSection },
+              ] as const
+            ).map((group) => {
+              const items = books.filter((b) =>
+                group.key === "published"
+                  ? b.status === "published"
+                  : b.status !== "published"
+              );
+              if (items.length === 0) return null;
               return (
-                <div
-                  key={b.id}
-                  className="group flex flex-col overflow-hidden rounded-xl border border-amber-900/15 bg-white shadow-sm transition hover:shadow-md"
-                >
-                  <Link
-                    href={`/editor/${b.id}`}
-                    className="flex h-28 items-center justify-center px-4 text-center"
-                    style={{
-                      background: theme.colors.cover,
-                      color: theme.colors.coverText,
-                    }}
-                  >
+                <section key={group.key}>
+                  <div className="mb-3 flex items-center gap-2">
                     <span
-                      className="line-clamp-3 text-sm font-semibold"
-                      style={{ fontFamily: theme.fonts.display }}
-                    >
-                      {b.name || b.title || t.common.untitledBook}
+                      className={`h-2 w-2 rounded-full ${
+                        group.key === "published"
+                          ? "bg-green-500"
+                          : "bg-gray-400"
+                      }`}
+                    />
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-900/70">
+                      {group.label}
+                    </h2>
+                    <span className="text-xs text-amber-900/40">
+                      ({items.length})
                     </span>
-                  </Link>
-                  <div className="flex flex-1 flex-col gap-2 p-3">
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                          b.status === "published"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-gray-100 text-gray-500"
-                        }`}
-                      >
-                        {b.status === "published"
-                          ? t.common.published
-                          : t.common.draft}
-                      </span>
-                      <span className="text-[11px] text-gray-400">
-                        {theme.name}
-                      </span>
-                    </div>
-                    <div className="mt-auto flex items-center gap-2">
-                      <Link
-                        href={`/editor/${b.id}`}
-                        className="flex-1 rounded-md border border-amber-700 px-2 py-1.5 text-center text-xs font-medium text-amber-800 hover:bg-amber-50"
-                      >
-                        {t.common.edit}
-                      </Link>
-                      {b.status === "published" && b.slug && (
-                        <Link
-                          href={`/b/${b.slug}`}
-                          target="_blank"
-                          className="rounded-md border border-gray-300 px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
-                        >
-                          {t.common.open}
-                        </Link>
-                      )}
-                      <button
-                        onClick={() => onDelete(b.id)}
-                        className="rounded-md border border-gray-300 px-2 py-1.5 text-xs text-red-500 hover:bg-red-50"
-                      >
-                        {t.common.delete}
-                      </button>
-                    </div>
+                    <span className="ml-2 h-px flex-1 bg-amber-900/10" />
                   </div>
-                </div>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                    {items.map((b) => renderCard(b))}
+                  </div>
+                </section>
               );
             })}
           </div>
