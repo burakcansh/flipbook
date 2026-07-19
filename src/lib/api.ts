@@ -135,6 +135,10 @@ export async function uploadAudio(file: File): Promise<{ url: string }> {
   return uploadFile(file);
 }
 
+export async function uploadHtml(file: File): Promise<{ url: string }> {
+  return uploadFile(file);
+}
+
 export async function fetchVideoMeta(url: string): Promise<VideoMeta | null> {
   const res = await fetch(`/api/video-meta?url=${encodeURIComponent(url)}`, {
     cache: "no-store",

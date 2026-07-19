@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MusicTrack, SiteDoc } from "@/lib/types";
 import { useT } from "@/lib/LangProvider";
+import { uploadHtml } from "@/lib/api";
 import MusicEditor from "./MusicEditor";
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_BYTES = 15 * 1024 * 1024; // 15 MB (uploaded straight to storage)
 
 export default function SiteEditor({
   site,
@@ -28,12 +29,33 @@ export default function SiteEditor({
 }) {
   const t = useT();
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
+  const [uploading, setUploading] = useState(false);
+  // Content shown in the live preview (from the current file, inline html, or
+  // fetched from the uploaded URL when the editor is reopened).
+  const [previewHtml, setPreviewHtml] = useState<string>(site.html || "");
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  function pick(file?: File | null) {
+  useEffect(() => {
+    if (site.html) {
+      setPreviewHtml(site.html);
+      return;
+    }
+    if (site.htmlUrl) {
+      let alive = true;
+      fetch(site.htmlUrl)
+        .then((r) => r.text())
+        .then((txt) => alive && setPreviewHtml(txt))
+        .catch(() => {});
+      return () => {
+        alive = false;
+      };
+    }
+    setPreviewHtml("");
+  }, [site.html, site.htmlUrl]);
+
+  async function pick(file?: File | null) {
     if (!file) return;
-    const isHtml =
-      file.type === "text/html" || /\.html?$/i.test(file.name);
+    const isHtml = file.type === "text/html" || /\.html?$/i.test(file.name);
     if (!isHtml) {
       alert(t.site.notHtml);
       return;
@@ -42,16 +64,26 @@ export default function SiteEditor({
       alert(t.site.tooLarge);
       return;
     }
+    // Show the preview immediately from the local file…
     const reader = new FileReader();
-    reader.onload = () => {
-      onChange({ html: String(reader.result ?? ""), fileName: file.name });
-      onCommit();
-    };
+    reader.onload = () => setPreviewHtml(String(reader.result ?? ""));
     reader.onerror = () => alert(t.site.readFailed);
     reader.readAsText(file);
+    // …and upload the file straight to storage (no serverless body limit),
+    // saving only its URL in the document.
+    setUploading(true);
+    try {
+      const { url } = await uploadHtml(file);
+      onChange({ html: "", htmlUrl: url, fileName: file.name });
+      onCommit();
+    } catch {
+      alert(t.site.readFailed);
+    } finally {
+      setUploading(false);
+    }
   }
 
-  const hasHtml = !!site.html.trim();
+  const hasHtml = !!(site.htmlUrl || site.html.trim());
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6">
@@ -81,9 +113,10 @@ export default function SiteEditor({
                 </div>
                 <button
                   onClick={() => fileRef.current?.click()}
-                  className="rounded-lg border border-amber-700 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-50"
+                  disabled={uploading}
+                  className="rounded-lg border border-amber-700 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-50 disabled:opacity-60"
                 >
-                  {t.site.replace}
+                  {uploading ? t.ed.uploading : t.site.replace}
                 </button>
               </div>
             ) : (
@@ -98,7 +131,7 @@ export default function SiteEditor({
               >
                 <span className="text-3xl">🌐</span>
                 <span className="mt-2 text-sm font-medium text-amber-900">
-                  {t.site.drop}
+                  {uploading ? t.ed.uploading : t.site.drop}
                 </span>
                 <span className="mt-1 text-xs text-amber-900/50">
                   {t.site.dropHint}
@@ -184,10 +217,10 @@ export default function SiteEditor({
           </div>
 
           <div className="flex justify-center overflow-hidden rounded-2xl border border-amber-900/15 bg-gray-100 p-3 shadow-inner">
-            {hasHtml ? (
+            {previewHtml ? (
               <iframe
                 title="preview"
-                srcDoc={site.html}
+                srcDoc={previewHtml}
                 sandbox="allow-scripts allow-popups allow-forms allow-modals allow-presentation"
                 style={{
                   width: device === "mobile" ? 390 : "100%",

@@ -33,7 +33,19 @@ export async function GET(
     }
   }
 
-  const html = book.cover.site?.html ?? "";
+  // Prefer the uploaded file in storage (large HTML isn't kept in the DB);
+  // fall back to inline html for older sites.
+  let html = book.cover.site?.html ?? "";
+  const htmlUrl = book.cover.site?.htmlUrl;
+  if (htmlUrl) {
+    try {
+      const r = await fetch(htmlUrl, { cache: "no-store" });
+      if (r.ok) html = await r.text();
+    } catch {
+      /* keep inline fallback */
+    }
+  }
+
   return new NextResponse(html, {
     status: 200,
     headers: {

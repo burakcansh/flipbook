@@ -127,8 +127,13 @@ export type DocType = "book" | "certificate" | "site";
 
 /** A user-uploaded HTML page hosted as a standalone responsive site. */
 export interface SiteDoc {
-  /** full HTML document as uploaded */
+  /** inline HTML (legacy / small files) — served directly when set */
   html: string;
+  /**
+   * Storage URL of the uploaded HTML. Preferred for any real upload so the
+   * document isn't stored in the DB row (avoids the serverless body limit).
+   */
+  htmlUrl?: string | null;
   /** original uploaded file name, for display */
   fileName?: string;
 }
