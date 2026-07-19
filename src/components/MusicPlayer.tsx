@@ -76,7 +76,7 @@ export default function MusicPlayer({
     <div
       className={
         site
-          ? "fixed right-3 top-3 z-[2147483647]"
+          ? "fixed right-3 top-[38%] z-[2147483647] -translate-y-1/2"
           : "fixed bottom-5 left-1/2 z-50 -translate-x-1/2 sm:bottom-auto sm:left-auto sm:right-4 sm:top-16 sm:translate-x-0"
       }
     >
