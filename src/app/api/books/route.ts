@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     slug: b.slug,
     updatedAt: b.updatedAt,
     docType: b.cover.docType ?? "book",
+    locked: !!b.viewPassword,
   }));
   return NextResponse.json({ books: summaries });
 }

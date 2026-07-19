@@ -199,6 +199,8 @@ export interface BookSummary {
   updatedAt: number;
   /** document kind — book / certificate / site */
   docType: DocType;
+  /** true when a view password is set */
+  locked: boolean;
 }
 
 /** A book as shown on the public bookshelf. */

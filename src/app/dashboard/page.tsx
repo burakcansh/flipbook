@@ -43,12 +43,20 @@ export default function DashboardPage() {
       >
         <Link
           href={`/editor/${b.id}`}
-          className="flex h-28 items-center justify-center px-4 text-center"
+          className="relative flex h-28 items-center justify-center px-4 text-center"
           style={{
             background: theme.colors.cover,
             color: theme.colors.coverText,
           }}
         >
+          {b.locked && (
+            <span
+              title={t.ed.protect}
+              className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/45 text-xs text-white backdrop-blur"
+            >
+              🔒
+            </span>
+          )}
           <span
             className="line-clamp-3 text-sm font-semibold"
             style={{ fontFamily: theme.fonts.display }}
