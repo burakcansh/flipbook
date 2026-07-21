@@ -136,6 +136,14 @@ export interface SiteDoc {
   htmlUrl?: string | null;
   /** original uploaded file name, for display */
   fileName?: string;
+  /** media (videos/images) uploaded for use inside the HTML, with public URLs */
+  assets?: SiteAsset[];
+}
+
+export interface SiteAsset {
+  url: string;
+  name: string;
+  kind: "video" | "image";
 }
 
 /** One person the certificate is issued to. */

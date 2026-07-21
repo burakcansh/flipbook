@@ -274,6 +274,14 @@ const tr = {
     desktop: "Masaüstü",
     mobile: "Mobil",
     noFile: "Önizleme için bir HTML dosyası yükle.",
+    mediaTitle: "🎬 Video / görsel ekle",
+    mediaHint:
+      "Bilgisayarındaki videoyu buraya yükle → linkini kopyala → ChatGPT'ye ver ya da HTML'ine yapıştır. Böylece video sitede oynar.",
+    mediaUpload: "Video / görsel yükle",
+    copyLink: "Linki kopyala",
+    copySnippet: "Video kodu kopyala",
+    copied: "Kopyalandı ✓",
+    mediaEmpty: "Henüz yüklenen medya yok.",
   },
 };
 
@@ -538,6 +546,14 @@ const en: typeof tr = {
     desktop: "Desktop",
     mobile: "Mobile",
     noFile: "Upload an HTML file to preview it.",
+    mediaTitle: "🎬 Add video / image",
+    mediaHint:
+      "Upload a video from your computer → copy its link → give it to ChatGPT or paste it into your HTML. The video will then play on the site.",
+    mediaUpload: "Upload video / image",
+    copyLink: "Copy link",
+    copySnippet: "Copy video code",
+    copied: "Copied ✓",
+    mediaEmpty: "No media uploaded yet.",
   },
 };
 

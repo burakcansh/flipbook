@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { MusicTrack, SiteDoc } from "@/lib/types";
+import type { MusicTrack, SiteAsset, SiteDoc } from "@/lib/types";
 import { useT } from "@/lib/LangProvider";
-import { uploadHtml } from "@/lib/api";
+import { uploadHtml, uploadVideo } from "@/lib/api";
 import MusicEditor from "./MusicEditor";
 
 const MAX_BYTES = 15 * 1024 * 1024; // 15 MB (uploaded straight to storage)
@@ -30,6 +30,43 @@ export default function SiteEditor({
   const t = useT();
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [uploading, setUploading] = useState(false);
+  const [mediaUploading, setMediaUploading] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const mediaRef = useRef<HTMLInputElement | null>(null);
+  const assets = site.assets ?? [];
+
+  async function addMedia(file?: File | null) {
+    if (!file) return;
+    setMediaUploading(true);
+    try {
+      const { url } = await uploadVideo(file);
+      const kind: SiteAsset["kind"] = file.type.startsWith("image/")
+        ? "image"
+        : "video";
+      onChange({ ...site, assets: [...assets, { url, name: file.name, kind }] });
+      onCommit();
+    } catch {
+      alert(t.site.readFailed);
+    } finally {
+      setMediaUploading(false);
+    }
+  }
+
+  function snippetFor(a: SiteAsset): string {
+    return a.kind === "image"
+      ? `<img src="${a.url}" alt="" style="width:100%;max-width:720px;border-radius:12px" />`
+      : `<video controls playsinline src="${a.url}" style="width:100%;max-width:720px;border-radius:12px"></video>`;
+  }
+
+  async function copy(text: string, key: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(key);
+      setTimeout(() => setCopied((c) => (c === key ? null : c)), 1500);
+    } catch {
+      /* ignore */
+    }
+  }
   // Content shown in the live preview (from the current file, inline html, or
   // fetched from the uploaded URL when the editor is reopened).
   const [previewHtml, setPreviewHtml] = useState<string>(site.html || "");
@@ -142,6 +179,83 @@ export default function SiteEditor({
             <p className="mt-3 text-[11px] leading-relaxed text-amber-900/55">
               {t.site.hint}
             </p>
+          </div>
+
+          {/* media (video/image) → get a link to paste into the HTML */}
+          <div className="rounded-2xl border border-amber-900/15 bg-white p-4 shadow-sm">
+            <h2 className="text-sm font-semibold text-amber-950">
+              {t.site.mediaTitle}
+            </h2>
+            <p className="mt-1 text-[11px] leading-relaxed text-amber-900/55">
+              {t.site.mediaHint}
+            </p>
+            <input
+              ref={mediaRef}
+              type="file"
+              accept="video/*,image/*"
+              className="hidden"
+              onChange={(e) => addMedia(e.target.files?.[0])}
+            />
+            <button
+              onClick={() => mediaRef.current?.click()}
+              disabled={mediaUploading}
+              className="mt-3 w-full rounded-lg border border-dashed border-amber-700/50 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-50 disabled:opacity-60"
+            >
+              {mediaUploading ? t.ed.uploading : `🎬 ${t.site.mediaUpload}`}
+            </button>
+
+            {assets.length > 0 ? (
+              <ul className="mt-3 flex flex-col gap-2">
+                {assets.map((a, i) => (
+                  <li
+                    key={a.url}
+                    className="rounded-lg border border-amber-900/10 bg-amber-50/50 p-2"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">
+                        {a.kind === "image" ? "🖼️" : "🎬"}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-xs text-amber-950">
+                        {a.name}
+                      </span>
+                      <button
+                        onClick={() => {
+                          onChange({
+                            ...site,
+                            assets: assets.filter((_, j) => j !== i),
+                          });
+                          onCommit();
+                        }}
+                        className="text-xs text-red-400 hover:text-red-600"
+                        title={t.ed.delete}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="mt-2 flex gap-1.5">
+                      <button
+                        onClick={() => copy(a.url, `url-${i}`)}
+                        className="flex-1 rounded-md border border-amber-700 px-2 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-50"
+                      >
+                        {copied === `url-${i}` ? t.site.copied : t.site.copyLink}
+                      </button>
+                      <button
+                        onClick={() => copy(snippetFor(a), `snip-${i}`)}
+                        className="flex-1 rounded-md bg-amber-700 px-2 py-1 text-[11px] font-medium text-white hover:bg-amber-800"
+                      >
+                        {copied === `snip-${i}`
+                          ? t.site.copied
+                          : t.site.copySnippet}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-3 text-[11px] text-amber-900/40">
+                {t.site.mediaEmpty}
+              </p>
+            )}
           </div>
 
           {/* password */}
