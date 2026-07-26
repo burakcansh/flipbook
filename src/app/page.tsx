@@ -281,9 +281,14 @@ export default function LandingPage() {
         <footer className="border-t border-amber-900/10 bg-[#f6efdd]/60">
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-6 sm:flex-row">
             <Logo size={26} />
-            <span className="text-xs text-amber-900/50">
-              © {new Date().getFullYear()} {t.home.footer}
-            </span>
+            <div className="flex flex-col items-center gap-0.5 text-xs text-amber-900/50 sm:items-end">
+              <span>
+                {t.home.founder} · <span className="font-medium text-amber-900/70">Burak Sarıkaya</span>
+              </span>
+              <span>
+                © {new Date().getFullYear()} {t.home.footer}
+              </span>
+            </div>
           </div>
         </footer>
       </div>

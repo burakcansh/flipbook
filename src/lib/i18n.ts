@@ -315,6 +315,7 @@ const tr = {
     ctaTitle: "Başlamaya hazır mısın?",
     ctaButton: "Yönetici girişi",
     footer: "NextviroBook",
+    founder: "Kurucu",
   },
 };
 
@@ -620,6 +621,7 @@ const en: typeof tr = {
     ctaTitle: "Ready to get started?",
     ctaButton: "Admin sign in",
     footer: "NextviroBook",
+    founder: "Founder",
   },
 };
 
