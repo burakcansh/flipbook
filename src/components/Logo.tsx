@@ -1,14 +1,17 @@
 /**
- * NextviroBook brand logo — an amber tile with an open book whose right page is
- * flipping, plus the "NextviroBook" wordmark. Self-contained inline SVG so it
- * stays crisp at any size.
+ * NextviroPublish brand logo — a ringed planet (Saturn) mark plus the
+ * "NextviroPublish" wordmark, optionally with the CREATE · PUBLISH · TRAIN
+ * tagline. Self-contained inline SVG so it stays crisp at any size and adapts
+ * to the site's amber theme.
  */
 export default function Logo({
   size = 34,
   showText = true,
+  tagline = false,
 }: {
   size?: number;
   showText?: boolean;
+  tagline?: boolean;
 }) {
   return (
     <span className="inline-flex items-center gap-2.5 align-middle">
@@ -21,58 +24,57 @@ export default function Logo({
         aria-hidden
       >
         <defs>
-          <linearGradient id="nvb-tile" x1="6" y1="4" x2="42" y2="44">
-            <stop offset="0" stopColor="#c99a45" />
-            <stop offset="1" stopColor="#8a6a28" />
+          <linearGradient id="nvp-planet" x1="15" y1="15" x2="34" y2="35">
+            <stop offset="0" stopColor="#dcbb84" />
+            <stop offset="1" stopColor="#9c7736" />
           </linearGradient>
         </defs>
-        <rect x="2" y="2" width="44" height="44" rx="12" fill="url(#nvb-tile)" />
-        <rect
-          x="2.6"
-          y="2.6"
-          width="42.8"
-          height="42.8"
-          rx="11.4"
-          stroke="#ffffff"
-          strokeOpacity="0.18"
-          strokeWidth="1.2"
-        />
-        {/* left page */}
+        <g transform="rotate(-20 24 25)">
+          {/* ring — back half (behind the planet) */}
+          <path
+            d="M7 25a17 5.4 0 0 1 34 0"
+            fill="none"
+            stroke="#b98f45"
+            strokeWidth="2.1"
+            strokeLinecap="round"
+          />
+          {/* planet */}
+          <circle cx="24" cy="25" r="9.6" fill="url(#nvp-planet)" />
+          <path
+            d="M24 15.4a9.6 9.6 0 0 1 0 19.2z"
+            fill="#5c3f1a"
+            opacity="0.12"
+          />
+          {/* ring — front half (in front of the planet) */}
+          <path
+            d="M7 25a17 5.4 0 0 0 34 0"
+            fill="none"
+            stroke="#e6c485"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+        </g>
+        {/* sparkles */}
         <path
-          d="M24 15.2C21 13.3 16.4 12.8 12.4 13.4C11.6 13.5 11 14.2 11 15V32.2C11 33.1 11.8 33.8 12.7 33.7C16.4 33.2 20.9 33.8 24 35.5V15.2Z"
-          fill="#fdf6e8"
+          d="M39 12l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"
+          fill="#c99a45"
         />
-        {/* right page */}
-        <path
-          d="M24 15.2C27 13.3 31.6 12.8 35.6 13.4C36.4 13.5 37 14.2 37 15V32.2C37 33.1 36.2 33.8 35.3 33.7C31.6 33.2 27.1 33.8 24 35.5V15.2Z"
-          fill="#ffffff"
-        />
-        {/* flipping page on the right */}
-        <path
-          d="M24 15.2C27.5 13 31 12.6 33.8 13C31.6 14.4 30.2 16.7 30 20.2C29.8 24.2 30.8 27.6 33 30C30.4 29.9 27 30.9 24 33V15.2Z"
-          fill="#f2e6cb"
-        />
-        {/* spine + page lines */}
-        <path
-          d="M24 15.5V34.6"
-          stroke="#8a6a28"
-          strokeWidth="1.3"
-          strokeLinecap="round"
-        />
-        <path
-          d="M14.5 19.5C16.8 19.2 19.4 19.5 21.3 20.4M14.5 24C16.8 23.7 19.4 24 21.3 24.9"
-          stroke="#caa25c"
-          strokeWidth="1.1"
-          strokeLinecap="round"
-        />
+        <circle cx="9.5" cy="15.5" r="1" fill="#c99a45" />
       </svg>
       {showText && (
-        <span
-          className="text-lg font-bold leading-none tracking-tight"
-          style={{ fontFamily: "var(--font-display), Georgia, serif" }}
-        >
-          <span className="text-amber-950">Nextviro</span>
-          <span className="text-amber-600">Book</span>
+        <span className="inline-flex flex-col leading-none">
+          <span
+            className="text-lg font-bold tracking-tight"
+            style={{ fontFamily: "var(--font-display), Georgia, serif" }}
+          >
+            <span className="text-amber-950">Nextviro</span>
+            <span className="text-amber-600">Publish</span>
+          </span>
+          {tagline && (
+            <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.28em] text-amber-800/70">
+              Create · Publish · Train
+            </span>
+          )}
         </span>
       )}
     </span>

@@ -28,7 +28,7 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "NextviroBook",
+  title: "NextviroPublish",
   description:
     "Kitap, sertifika ve web sayfalarını oluştur; link ve kodla paylaş.",
 };

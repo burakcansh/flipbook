@@ -314,7 +314,7 @@ const tr = {
     how3Desc: "Linki ya da kodu paylaş; herkes web ve mobilde açsın.",
     ctaTitle: "Başlamaya hazır mısın?",
     ctaButton: "Yönetici girişi",
-    footer: "NextviroBook",
+    footer: "NextviroPublish",
     founder: "Kurucu",
   },
 };
@@ -620,7 +620,7 @@ const en: typeof tr = {
     how3Desc: "Share the link or code; anyone opens it on web and mobile.",
     ctaTitle: "Ready to get started?",
     ctaButton: "Admin sign in",
-    footer: "NextviroBook",
+    footer: "NextviroPublish",
     founder: "Founder",
   },
 };

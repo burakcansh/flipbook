@@ -49,7 +49,7 @@ export default function ViewerScreen({ book }: { book: PublicBook }) {
             href="/"
             className="rounded-lg border border-white/20 px-3 py-1.5 text-sm text-white/80 hover:bg-white/10"
           >
-            📖 NextviroBook
+            📖 NextviroPublish
           </Link>
         </header>
 

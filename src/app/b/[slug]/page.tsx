@@ -20,7 +20,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const book = await getBookBySlug(params.slug);
   if (!book) {
-    return { title: "Bulunamadı — NextviroBook" };
+    return { title: "Bulunamadı — NextviroPublish" };
   }
 
   // Hosted site → show the admin-chosen name as the page/share title.
@@ -41,21 +41,21 @@ export async function generateMetadata({
   // Locked books must not leak content into OG/metadata.
   if (book.viewPassword) {
     return {
-      title: `${title} — NextviroBook`,
+      title: `${title} — NextviroPublish`,
       description: "Bu kitap şifre ile korunuyor.",
     };
   }
 
   const description =
     book.cover.subtitle ||
-    `${getTheme(book.themeKey).name} temasında bir NextviroBook belgesi.`;
+    `${getTheme(book.themeKey).name} temasında bir NextviroPublish belgesi.`;
   const firstVideo = book.pages.find(
     (p) => p.kind === "video" && p.video?.thumbnail
   );
   const ogImage = firstVideo?.video?.thumbnail;
 
   return {
-    title: `${title} — NextviroBook`,
+    title: `${title} — NextviroPublish`,
     description,
     openGraph: {
       title,
