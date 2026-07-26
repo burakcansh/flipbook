@@ -283,6 +283,39 @@ const tr = {
     copied: "Kopyalandı ✓",
     mediaEmpty: "Henüz yüklenen medya yok.",
   },
+  home: {
+    heroTitle: "İçeriğini paylaşılabilir dijital deneyimlere dönüştür",
+    heroSub:
+      "Sayfa çevirmeli kitaplar, eğitim sertifikaları ve canlı web sayfaları — tek platformda oluştur, link ve 5 haneli kodla paylaş.",
+    heroSignIn: "Yönetici girişi",
+    featuresTitle: "Neler yapabilirsin?",
+    fBookTitle: "Dijital Kitap / Dergi",
+    fBookDesc:
+      "Gerçekçi sayfa çevirme, hazır şablonlar, PDF'ten otomatik sayfa arka planı ve düzenlenebilir bitiş sayfası.",
+    fCertTitle: "Eğitim Sertifikası",
+    fCertDesc:
+      "Personel bilgileriyle toplu üretim, çift dilli tasarım ve yatay PDF olarak indirme.",
+    fSiteTitle: "Web Sayfası (HTML)",
+    fSiteDesc:
+      "Kendi HTML dosyanı yükle, canlı ve mobil uyumlu bir siteye dönüşsün; video ve müzik ekle.",
+    commonTitle: "Her projede hazır",
+    cCode: "5 haneli paylaşım kodu",
+    cLink: "Paylaşılabilir link",
+    cPassword: "Şifre koruması",
+    cMusic: "Arka plan müziği",
+    cMobile: "Mobil uyumlu",
+    cLang: "Türkçe / İngilizce",
+    howTitle: "Nasıl çalışır?",
+    how1Title: "Oluştur",
+    how1Desc: "Kitap, sertifika ya da HTML sayfanı editörde hazırla.",
+    how2Title: "Yayınla",
+    how2Desc: "Tek tıkla link ve 5 haneli kod üret; istersen şifre koy.",
+    how3Title: "Paylaş",
+    how3Desc: "Linki ya da kodu paylaş; herkes web ve mobilde açsın.",
+    ctaTitle: "Başlamaya hazır mısın?",
+    ctaButton: "Yönetici girişi",
+    footer: "Flipbook — Nextviro",
+  },
 };
 
 const en: typeof tr = {
@@ -554,6 +587,39 @@ const en: typeof tr = {
     copySnippet: "Copy video code",
     copied: "Copied ✓",
     mediaEmpty: "No media uploaded yet.",
+  },
+  home: {
+    heroTitle: "Turn your content into shareable digital experiences",
+    heroSub:
+      "Page-flip books, training certificates and live web pages — build them in one place and share with a link and a 5-digit code.",
+    heroSignIn: "Admin sign in",
+    featuresTitle: "What can you build?",
+    fBookTitle: "Digital Book / Magazine",
+    fBookDesc:
+      "Realistic page-flip, ready-made templates, automatic page backgrounds from a PDF, and an editable closing page.",
+    fCertTitle: "Training Certificate",
+    fCertDesc:
+      "Bulk-generate from staff details, bilingual design, and download as a landscape PDF.",
+    fSiteTitle: "Web Page (HTML)",
+    fSiteDesc:
+      "Upload your own HTML file and turn it into a live, mobile-friendly site; add video and music.",
+    commonTitle: "Built into every project",
+    cCode: "5-digit share code",
+    cLink: "Shareable link",
+    cPassword: "Password protection",
+    cMusic: "Background music",
+    cMobile: "Mobile-friendly",
+    cLang: "Turkish / English",
+    howTitle: "How it works",
+    how1Title: "Create",
+    how1Desc: "Build your book, certificate or HTML page in the editor.",
+    how2Title: "Publish",
+    how2Desc: "Generate a link and a 5-digit code in one click; add a password if you like.",
+    how3Title: "Share",
+    how3Desc: "Share the link or code; anyone opens it on web and mobile.",
+    ctaTitle: "Ready to get started?",
+    ctaButton: "Admin sign in",
+    footer: "Flipbook — Nextviro",
   },
 };
 
