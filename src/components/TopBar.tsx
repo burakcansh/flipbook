@@ -7,6 +7,7 @@ import { listMyBooks } from "@/lib/api";
 import { useAuth, logout } from "@/lib/owner";
 import { useT } from "@/lib/LangProvider";
 import LangToggle from "./LangToggle";
+import Logo from "./Logo";
 import type { BookSummary } from "@/lib/types";
 
 export default function TopBar({ activeBookId }: { activeBookId?: string }) {
@@ -55,10 +56,7 @@ export default function TopBar({ activeBookId }: { activeBookId?: string }) {
     <header className="sticky top-0 z-40 border-b border-amber-900/10 bg-[#f7f1e6]/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="text-xl">📖</span>
-          <span className="font-semibold tracking-tight text-amber-950">
-            Flipbook
-          </span>
+          <Logo size={30} />
         </Link>
 
         <div className="flex items-center gap-3" ref={menuRef}>

@@ -28,9 +28,9 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "Flipbook — Dijital Kitap Oluşturucu",
+  title: "NextviroBook",
   description:
-    "Gerçekçi sayfa çevirme animasyonuyla dijital kitap ve dergi oluştur, link ile paylaş.",
+    "Kitap, sertifika ve web sayfalarını oluştur; link ve kodla paylaş.",
 };
 
 export default function RootLayout({
