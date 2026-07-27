@@ -282,6 +282,7 @@ const tr = {
     copySnippet: "Video kodu kopyala",
     copied: "Kopyalandı ✓",
     mediaEmpty: "Henüz yüklenen medya yok.",
+    download: "Projeyi indir",
   },
   home: {
     heroTitle: "İçeriğini paylaşılabilir dijital deneyimlere dönüştür",
@@ -588,6 +589,7 @@ const en: typeof tr = {
     copySnippet: "Copy video code",
     copied: "Copied ✓",
     mediaEmpty: "No media uploaded yet.",
+    download: "Download project",
   },
   home: {
     heroTitle: "Turn your content into shareable digital experiences",

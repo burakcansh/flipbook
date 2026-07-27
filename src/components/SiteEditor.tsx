@@ -90,6 +90,27 @@ export default function SiteEditor({
     setPreviewHtml("");
   }, [site.html, site.htmlUrl]);
 
+  async function downloadHtml() {
+    let html = previewHtml;
+    if (!html && site.htmlUrl) {
+      try {
+        html = await (await fetch(site.htmlUrl)).text();
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!html) return;
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = site.fileName || "page.html";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   async function pick(file?: File | null) {
     if (!file) return;
     const isHtml = file.type === "text/html" || /\.html?$/i.test(file.name);
@@ -148,13 +169,21 @@ export default function SiteEditor({
                     {site.fileName || "page.html"}
                   </span>
                 </div>
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading}
-                  className="rounded-lg border border-amber-700 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-50 disabled:opacity-60"
-                >
-                  {uploading ? t.ed.uploading : t.site.replace}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading}
+                    className="flex-1 rounded-lg border border-amber-700 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-50 disabled:opacity-60"
+                  >
+                    {uploading ? t.ed.uploading : t.site.replace}
+                  </button>
+                  <button
+                    onClick={downloadHtml}
+                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    ⬇ {t.site.download}
+                  </button>
+                </div>
               </div>
             ) : (
               <div
