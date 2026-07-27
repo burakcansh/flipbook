@@ -80,6 +80,15 @@ export default function DashboardPage() {
               {type.label}
             </span>
           </div>
+
+          {b.note.trim() && (
+            <div className="note-glow flex items-start gap-1.5 rounded-lg border border-amber-300 bg-white px-2 py-1.5">
+              <span className="note-dot mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+              <span className="line-clamp-2 text-[11px] leading-snug text-amber-950">
+                {b.note}
+              </span>
+            </div>
+          )}
           <div className="mt-auto flex items-center gap-2">
             <Link
               href={`/editor/${b.id}`}

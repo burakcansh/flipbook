@@ -229,6 +229,8 @@ export interface BookSummary {
   docType: DocType;
   /** true when a view password is set */
   locked: boolean;
+  /** collaboration note (empty when none) */
+  note: string;
 }
 
 /** A book as shown on the public bookshelf. */

@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
     updatedAt: b.updatedAt,
     docType: b.cover.docType ?? "book",
     locked: !!b.viewPassword,
+    note: b.cover.notes ?? "",
   }));
   return NextResponse.json({ books: summaries });
 }
