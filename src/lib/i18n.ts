@@ -284,6 +284,27 @@ const tr = {
     mediaEmpty: "Henüz yüklenen medya yok.",
     download: "Projeyi indir",
   },
+  proj: {
+    tools: "Proje araçları",
+    notesTitle: "📝 Proje notu",
+    notesPlaceholder:
+      "Ortak çalışanlar için not… (kaydedilince projede belirir)",
+    saveNote: "Notu kaydet",
+    noteSaved: "Not kaydedildi ✓",
+    clearNote: "Notu sil",
+    helpersTitle: "🗂️ Yardımcı HTML dosyalar (yedek)",
+    helpersHint:
+      "Projeyi etkilemez — sadece yedek/önizleme. Her dosya için ayrı link üretilir, şifrelenebilir.",
+    uploadHelper: "HTML yedek yükle",
+    helperNamePh: "Dosya adı",
+    helperNotePh: "Ne için? (ör. eski sürüm yedeği)",
+    preview: "Önizle",
+    copyLink: "Linki kopyala",
+    copied: "Kopyalandı ✓",
+    noHelpers: "Henüz yardımcı dosya yok.",
+    uploading: "Yükleniyor…",
+    notHtml: "Lütfen bir .html dosyası seç.",
+  },
   home: {
     heroTitle: "İçeriğini paylaşılabilir dijital deneyimlere dönüştür",
     heroSub:
@@ -590,6 +611,27 @@ const en: typeof tr = {
     copied: "Copied ✓",
     mediaEmpty: "No media uploaded yet.",
     download: "Download project",
+  },
+  proj: {
+    tools: "Project tools",
+    notesTitle: "📝 Project note",
+    notesPlaceholder:
+      "A note for collaborators… (shows on the project once saved)",
+    saveNote: "Save note",
+    noteSaved: "Note saved ✓",
+    clearNote: "Clear note",
+    helpersTitle: "🗂️ Helper HTML files (backup)",
+    helpersHint:
+      "Doesn't affect the project — backup/preview only. Each file gets its own link and can be password-protected.",
+    uploadHelper: "Upload HTML backup",
+    helperNamePh: "File name",
+    helperNotePh: "What for? (e.g. old version backup)",
+    preview: "Preview",
+    copyLink: "Copy link",
+    copied: "Copied ✓",
+    noHelpers: "No helper files yet.",
+    uploading: "Uploading…",
+    notHtml: "Please pick an .html file.",
   },
   home: {
     heroTitle: "Turn your content into shareable digital experiences",

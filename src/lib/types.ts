@@ -121,6 +121,21 @@ export interface BookCover {
   certificate?: Certificate | null;
   /** raw uploaded HTML document (when docType === "site") */
   site?: SiteDoc | null;
+  /** collaboration note shown to anyone editing this project */
+  notes?: string;
+  /** auxiliary HTML files kept as backups (each gets its own preview link) */
+  helperFiles?: HelperFile[];
+}
+
+/** An auxiliary HTML file attached to a project as a backup/preview only. */
+export interface HelperFile {
+  id: string;
+  name: string;
+  /** what this file is for — shown so its purpose is clear */
+  note?: string;
+  htmlUrl: string;
+  /** optional password to view the preview link */
+  password?: string | null;
 }
 
 export type DocType = "book" | "certificate" | "site";

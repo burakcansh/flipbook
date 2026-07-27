@@ -22,6 +22,7 @@ import MusicEditor from "./MusicEditor";
 import PdfExportButton from "./PdfExportButton";
 import CertificateEditor from "./CertificateEditor";
 import SiteEditor from "./SiteEditor";
+import ProjectExtras from "./ProjectExtras";
 import { useT } from "@/lib/LangProvider";
 import type { Certificate, SiteDoc } from "@/lib/types";
 import type { Book, BookPage, MusicTrack, TextBlock } from "@/lib/types";
@@ -140,6 +141,17 @@ export default function Editor({ id }: { id: string }) {
     if (!cur) return;
     const nb = { ...cur, cover: { ...cur.cover, site: next } };
     bookRef.current = nb; // keep ref fresh so the immediate commit isn't stale
+    setBook(nb);
+    scheduleSave();
+  }
+
+  // Notes + helper files apply to every doc type; keep bookRef in lockstep so an
+  // immediate save (upload/toggle) isn't stale.
+  function patchExtras(patch: Partial<Book["cover"]>) {
+    const cur = bookRef.current;
+    if (!cur) return;
+    const nb = { ...cur, cover: { ...cur.cover, ...patch } };
+    bookRef.current = nb;
     setBook(nb);
     scheduleSave();
   }
@@ -499,6 +511,13 @@ export default function Editor({ id }: { id: string }) {
             <span className="text-xs text-amber-900/40">{saveLabel}</span>
           </div>
         </div>
+        <ProjectExtras
+          bookId={book.id}
+          notes={book.cover.notes ?? ""}
+          helperFiles={book.cover.helperFiles ?? []}
+          onPatch={patchExtras}
+          onCommit={commitSave}
+        />
         <CertificateEditor
           cert={cert}
           onChange={patchCert}
@@ -588,6 +607,13 @@ export default function Editor({ id }: { id: string }) {
             </div>
           )}
         </div>
+        <ProjectExtras
+          bookId={book.id}
+          notes={book.cover.notes ?? ""}
+          helperFiles={book.cover.helperFiles ?? []}
+          onPatch={patchExtras}
+          onCommit={commitSave}
+        />
         <SiteEditor
           site={siteDoc}
           onChange={patchSite}
@@ -676,6 +702,14 @@ export default function Editor({ id }: { id: string }) {
           </div>
         )}
       </div>
+
+      <ProjectExtras
+        bookId={book.id}
+        notes={book.cover.notes ?? ""}
+        helperFiles={book.cover.helperFiles ?? []}
+        onPatch={patchExtras}
+        onCommit={commitSave}
+      />
 
       {/* main */}
       <main className="mx-auto max-w-6xl px-4 py-6">

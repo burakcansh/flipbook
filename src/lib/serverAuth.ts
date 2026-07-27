@@ -19,3 +19,14 @@ export function siteUnlockCookie(slug: string): string {
 export function siteUnlockToken(slug: string): string {
   return crypto.createHmac("sha256", SECRET).update(`site:${slug}`).digest("hex");
 }
+
+/** Unlock cookie name/token for a helper (auxiliary) HTML file. */
+export function helperUnlockCookie(bid: string, fid: string): string {
+  return `helper_unlock_${bid}_${fid}`;
+}
+export function helperUnlockToken(bid: string, fid: string): string {
+  return crypto
+    .createHmac("sha256", SECRET)
+    .update(`helper:${bid}:${fid}`)
+    .digest("hex");
+}

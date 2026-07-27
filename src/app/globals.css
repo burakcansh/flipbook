@@ -324,3 +324,25 @@ body {
     transparent 2px 7px
   );
 }
+
+/* ---------- Project note "cloud" blink/glow ---------- */
+@keyframes noteGlow {
+  0%, 100% {
+    box-shadow: 0 6px 18px rgba(120, 90, 30, 0.14),
+      0 0 0 0 rgba(217, 154, 69, 0);
+  }
+  50% {
+    box-shadow: 0 6px 18px rgba(120, 90, 30, 0.14),
+      0 0 22px 5px rgba(217, 154, 69, 0.6);
+  }
+}
+.note-glow {
+  animation: noteGlow 1.7s ease-in-out infinite;
+}
+@keyframes noteDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.25; transform: scale(0.7); }
+}
+.note-dot {
+  animation: noteDot 1s ease-in-out infinite;
+}
