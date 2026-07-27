@@ -264,6 +264,7 @@ const tr = {
     docName: "Sayfa adı",
     htmlFile: "HTML dosyası",
     notHtml: "Lütfen bir .html dosyası seç.",
+    downloadFile: "İndir",
     tooLarge: "Dosya çok büyük (en fazla 15 MB).",
     readFailed: "Dosya okunamadı.",
     replace: "Dosyayı değiştir",
@@ -304,6 +305,7 @@ const tr = {
     noHelpers: "Henüz yardımcı dosya yok.",
     uploading: "Yükleniyor…",
     notHtml: "Lütfen bir .html dosyası seç.",
+    downloadFile: "İndir",
   },
   home: {
     heroTitle: "İçeriğini paylaşılabilir dijital deneyimlere dönüştür",
@@ -592,6 +594,7 @@ const en: typeof tr = {
     docName: "Page name",
     htmlFile: "HTML file",
     notHtml: "Please pick an .html file.",
+    downloadFile: "Download",
     tooLarge: "File is too large (max 15 MB).",
     readFailed: "Couldn't read the file.",
     replace: "Replace file",
@@ -632,6 +635,7 @@ const en: typeof tr = {
     noHelpers: "No helper files yet.",
     uploading: "Uploading…",
     notHtml: "Please pick an .html file.",
+    downloadFile: "Download",
   },
   home: {
     heroTitle: "Turn your content into shareable digital experiences",

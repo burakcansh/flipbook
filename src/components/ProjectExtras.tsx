@@ -81,6 +81,23 @@ export default function ProjectExtras({
     }
   }
 
+  async function downloadHelper(h: HelperFile) {
+    try {
+      const html = await (await fetch(h.htmlUrl)).text();
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = h.name || "helper.html";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      /* ignore */
+    }
+  }
+
   const helperUrl = (h: HelperFile) =>
     typeof window !== "undefined"
       ? `${window.location.origin}/h/${bookId}/${h.id}`
@@ -244,6 +261,12 @@ export default function ProjectExtras({
                           className="rounded-md border border-amber-700 px-2 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-50"
                         >
                           {copied === h.id ? t.proj.copied : t.proj.copyLink}
+                        </button>
+                        <button
+                          onClick={() => downloadHelper(h)}
+                          className="rounded-md border border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-white"
+                        >
+                          ⬇ {t.proj.downloadFile}
                         </button>
                         <label className="ml-auto flex cursor-pointer items-center gap-1 text-[11px] text-amber-900/80">
                           <input
